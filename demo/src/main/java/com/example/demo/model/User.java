@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
-import jakarta.validation.constraints.NotBlank;
+import java.util.Set;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,9 +9,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class DemoProduct {
+public class User {
     private Long id;
-    @NotBlank
-    private String title;
-    private int price;
+    private String username;
+    private String password;
+    private boolean enabled;
+    private Set<Role> roles;
 }
