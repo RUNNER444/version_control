@@ -1,45 +1,70 @@
 package com.example.demo.controller;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.demo.model.AppVersion;
+import com.example.demo.service.AppVersionService;
+
+import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
 
-import com.example.demo.model.AppVersion;
 
-import jakarta.validation.Valid;
+
 
 @RestController
 @RequestMapping("/api")
 public class AppVersionController {
-    private List<AppVersion> appVersions = new ArrayList<>();
+
+    private final AppVersionService appVersionService;
+
+    AppVersionController(AppVersionService appVersionService) {
+        this.appVersionService = appVersionService;
+    }
 
     @GetMapping("/appVersions")
     public List<AppVersion> getAppVersions() {
-        return appVersions;
+        return appVersionService.getAll();
     }
 
-    @GetMapping("/appVersions/{version}")
-    public ResponseEntity<AppVersion> getAppVersion(@PathVariable String version) {
-        for (AppVersion appVersion : appVersions) {
-            if (appVersion.getVersion().equals(version)) {
-                return ResponseEntity.ok(appVersion);
-            }
-        }
-        return ResponseEntity.notFound().build();
+    @GetMapping("/appVersions/{id}")
+    public ResponseEntity<AppVersion> getAppVersion(@PathVariable Long id) {
+        return ResponseEntity.ok().body(appVersionService.getById(id));
     }
+    
 
     @PostMapping("/appVersions")
     public ResponseEntity<AppVersion> addAppVersion(@RequestBody @Valid AppVersion appVersion) {
-        appVersion.setVersion("0.0.1");
-        appVersions.add(appVersion);
-        return ResponseEntity.status(HttpStatus.CREATED).body(appVersion);
+        AppVersion newAppVersion = appVersionService.create(appVersion);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newAppVersion);
+    }
+    
+    @PutMapping("/appVersions/{id}")
+    public ResponseEntity <AppVersion> editAppVersion(@PathVariable Long id, @RequestBody @Valid AppVersion appVersion) {   
+        AppVersion updated = appVersionService.update(id, appVersion);
+        if (updated != null) {
+            return ResponseEntity.ok(updated);
+        }
+        else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping ("/appVersions/{id}")
+    public ResponseEntity <Void> deleteAppVersion(@PathVariable Long id) {
+        if (appVersionService.deleteById(id)) {
+            ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok().build();
     }
 }

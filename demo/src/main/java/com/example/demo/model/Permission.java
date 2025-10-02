@@ -9,5 +9,6 @@ import lombok.NoArgsConstructor;
 @Data
 public class Permission {
     private Long id;
+    
     private String title;
 }

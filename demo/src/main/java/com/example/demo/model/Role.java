@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @Data
 public class Role {
     private Long id;
+
     private String title;
+    
     private Set<Permission> permissions;
 }

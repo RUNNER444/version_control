@@ -21,9 +21,9 @@ server:
 ---
 spring:
     datasource:
-        url: jdbc:postgresql://localhost:5432/shop
+        url: jdbc:postgresql://localhost:5432/version_control
         username: postgres
-        password: 1122
+        password: sanity
         driver-class-name: org.postgresql.Driver
     jpa:
         database-platform: org.hibernate.dialect.PostgreSQLDialect
