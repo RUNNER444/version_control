@@ -22,7 +22,6 @@ public class UserDevice {
     @GeneratedValue (strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
     private Long userId;
 
     private PlatformType platform;
