@@ -18,6 +18,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            z-index: 50;
         }
         .modal-content {
             background-color: white;
@@ -46,11 +47,14 @@
             </nav>
         </div>
 
-        <!-- App Versions Table -->
+        <!-- App Versions Table Section -->
         <div id="content-app-versions" class="tab-content bg-white p-6 rounded-lg shadow-md">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                 <h2 class="text-2xl font-semibold">App Versions</h2>
-                <button onclick="openModal('appVersionModal')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow">Add New Version</button>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="appVersionSearch" placeholder="Filter by version..." class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button onclick="openModal('appVersionModal')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow w-full sm:w-auto">Add New Version</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-white">
@@ -73,11 +77,15 @@
             </div>
         </div>
 
-        <!-- User Devices Table -->
+        <!-- User Devices Table Section -->
         <div id="content-user-devices" class="tab-content bg-white p-6 rounded-lg shadow-md hidden">
-             <div class="flex justify-between items-center mb-4">
+             <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                 <h2 class="text-2xl font-semibold">User Devices</h2>
-                <button onclick="openModal('userDeviceModal')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow">Add New Device</button>
+                 <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                    <input type="number" id="userDeviceUserIdSearch" placeholder="Filter by User ID..." class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <input type="text" id="userDeviceVersionSearch" placeholder="Filter by Version..." class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button onclick="openModal('userDeviceModal')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow w-full sm:w-auto">Add New Device</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-white">
@@ -178,7 +186,7 @@
     </div>
     
     <!-- Custom alert/message box -->
-    <div id="messageBox" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden">
+    <div id="messageBox" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden z-index-100">
         <p id="messageText"></p>
     </div>
 
@@ -191,7 +199,7 @@
         const messageBox = document.getElementById('messageBox');
         const messageText = document.getElementById('messageText');
         messageText.textContent = message;
-        messageBox.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+        messageBox.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg z-50 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
         messageBox.classList.remove('hidden');
         setTimeout(() => {
             messageBox.classList.add('hidden');
@@ -258,30 +266,44 @@
 
     // --- App Version API Calls ---
     async function fetchAppVersions() {
+        // CORRECTED: Always use the filter endpoint for consistency.
+        const searchTerm = document.getElementById('appVersionSearch').value;
+        const params = new URLSearchParams();
+        if (searchTerm) {
+            params.append('version', searchTerm);
+        }
+        const url = `${API_BASE_URL}/appVersionFilter?${params.toString()}`;
+
         try {
-            const response = await fetch(`${API_BASE_URL}/appVersions`);
+            const response = await fetch(url);
             if (!response.ok) throw new Error('Failed to fetch app versions');
-            const appVersions = await response.json();
+            
+            // CORRECTED: Always expect a Page object from the filter endpoint.
+            const page = await response.json();
+            const data = page.content;
+
             const tableBody = document.getElementById('appVersionTableBody');
             tableBody.innerHTML = '';
-            appVersions.forEach(v => {
-                const row = `
-                    <tr class="border-b">
-                        <td class="py-2 px-4">${v.id}</td>
-                        <td class="py-2 px-4">${v.version}</td>
-                        <td class="py-2 px-4">${v.platform || 'N/A'}</td>
-                        <td class="py-2 px-4">${formatDate(v.releaseDate)}</td>
-                        <td class="py-2 px-4">${v.changelog || 'N/A'}</td>
-                        <td class="py-2 px-4">${v.updateType || 'N/A'}</td>
-                        <td class="py-2 px-4">${v.isActive ? 'Yes' : 'No'}</td>
-                        <td class="py-2 px-4 text-center">
-                            <button onclick='openModal("appVersionModal", ${JSON.stringify(v)})' class="text-blue-500 hover:underline mr-2">Edit</button>
-                            <button onclick="deleteAppVersion(${v.id})" class="text-red-500 hover:underline">Delete</button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
+            if (data) {
+                data.forEach(v => {
+                    const row = `
+                        <tr class="border-b">
+                            <td class="py-2 px-4">${v.id}</td>
+                            <td class="py-2 px-4">${v.version}</td>
+                            <td class="py-2 px-4">${v.platform || 'N/A'}</td>
+                            <td class="py-2 px-4">${formatDate(v.releaseDate)}</td>
+                            <td class="py-2 px-4">${v.changelog || 'N/A'}</td>
+                            <td class="py-2 px-4">${v.updateType || 'N/A'}</td>
+                            <td class="py-2 px-4">${v.isActive ? 'Yes' : 'No'}</td>
+                            <td class="py-2 px-4 text-center">
+                                <button onclick='openModal("appVersionModal", ${JSON.stringify(v)})' class="text-blue-500 hover:underline mr-2">Edit</button>
+                                <button onclick="deleteAppVersion(${v.id})" class="text-red-500 hover:underline">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            }
         } catch (error) {
             console.error('Error fetching app versions:', error);
             showMessage('Error fetching app versions', true);
@@ -324,7 +346,10 @@
         if (!confirm('Are you sure you want to delete this app version?')) return;
         try {
             const response = await fetch(`${API_BASE_URL}/appVersions/${id}`, { method: 'DELETE' });
-            if (!response.ok) throw new Error('Failed to delete app version');
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Failed to delete app version. Server says: ${errorData}`);
+            }
             showMessage('App version deleted successfully!');
             fetchAppVersions();
         } catch (error) {
@@ -335,28 +360,44 @@
 
     // --- User Device API Calls ---
     async function fetchUserDevices() {
+        // CORRECTED: Always use the filter endpoint for consistency.
+        const userId = document.getElementById('userDeviceUserIdSearch').value;
+        const version = document.getElementById('userDeviceVersionSearch').value;
+        
+        const params = new URLSearchParams();
+        if (userId) params.append('userId', userId);
+        if (version) params.append('version', version);
+
+        const url = `${API_BASE_URL}/userDeviceFilter?${params.toString()}`;
+
         try {
-            const response = await fetch(`${API_BASE_URL}/userDevices`);
+            const response = await fetch(url);
              if (!response.ok) throw new Error('Failed to fetch user devices');
-            const userDevices = await response.json();
+            
+            // CORRECTED: Always expect a Page object from the filter endpoint.
+            const page = await response.json();
+            const data = page.content;
+
             const tableBody = document.getElementById('userDeviceTableBody');
             tableBody.innerHTML = '';
-            userDevices.forEach(d => {
-                const row = `
-                    <tr class="border-b">
-                        <td class="py-2 px-4">${d.id}</td>
-                        <td class="py-2 px-4">${d.userId}</td>
-                        <td class="py-2 px-4">${d.platform || 'N/A'}</td>
-                        <td class="py-2 px-4">${d.currentVersion}</td>
-                        <td class="py-2 px-4">${formatDate(d.lastSeen)}</td>
-                        <td class="py-2 px-4 text-center">
-                           <button onclick='openModal("userDeviceModal", ${JSON.stringify(d)})' class="text-blue-500 hover:underline mr-2">Edit</button>
-                           <button onclick="deleteUserDevice(${d.id})" class="text-red-500 hover:underline">Delete</button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
+            if (data) {
+                data.forEach(d => {
+                    const row = `
+                        <tr class="border-b">
+                            <td class="py-2 px-4">${d.id}</td>
+                            <td class="py-2 px-4">${d.userId}</td>
+                            <td class="py-2 px-4">${d.platform || 'N/A'}</td>
+                            <td class="py-2 px-4">${d.currentVersion}</td>
+                            <td class="py-2 px-4">${formatDate(d.lastSeen)}</td>
+                            <td class="py-2 px-4 text-center">
+                               <button onclick='openModal("userDeviceModal", ${JSON.stringify(d)})' class="text-blue-500 hover:underline mr-2">Edit</button>
+                               <button onclick="deleteUserDevice(${d.id})" class="text-red-500 hover:underline">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            }
         } catch (error) {
             console.error('Error fetching user devices:', error);
             showMessage('Error fetching user devices', true);
@@ -397,7 +438,10 @@
         if (!confirm('Are you sure you want to delete this user device?')) return;
         try {
             const response = await fetch(`${API_BASE_URL}/userDevices/${id}`, { method: 'DELETE' });
-            if (!response.ok) throw new Error('Failed to delete user device');
+             if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Failed to delete user device. Server says: ${errorData}`);
+            }
             showMessage('User device deleted successfully!');
             fetchUserDevices();
         } catch (error) {
@@ -406,13 +450,31 @@
         }
     }
 
+    // --- Debounce function for search inputs ---
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
 
     // --- Initialization ---
     document.addEventListener('DOMContentLoaded', () => {
         fetchAppVersions();
         fetchUserDevices();
+        
         document.getElementById('appVersionForm').addEventListener('submit', saveAppVersion);
         document.getElementById('userDeviceForm').addEventListener('submit', saveUserDevice);
+
+        // --- Search Event Listeners ---
+        const debouncedAppVersionSearch = debounce(fetchAppVersions, 300);
+        document.getElementById('appVersionSearch').addEventListener('input', debouncedAppVersionSearch);
+
+        const debouncedUserDeviceSearch = debounce(fetchUserDevices, 300);
+        document.getElementById('userDeviceUserIdSearch').addEventListener('input', debouncedUserDeviceSearch);
+        document.getElementById('userDeviceVersionSearch').addEventListener('input', debouncedUserDeviceSearch);
     });
 
 </script>
