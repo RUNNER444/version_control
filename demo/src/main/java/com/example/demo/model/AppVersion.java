@@ -29,12 +29,15 @@ public class AppVersion {
     @Column(nullable = false, unique = true, length = 100)
     private String version;
 
+    @Column(nullable = false, length = 50)
     private PlatformType platform;
 
+    @Column(nullable = false)
     private LocalDateTime releaseDate;
 
     private String changelog;
 
+    @Column(nullable = false)
     private UpdateType updateType;
     
     private boolean isActive;
