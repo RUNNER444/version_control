@@ -1,4 +1,4 @@
-package com.example.demo.DTO;
+package com.example.demo.dto;
 
 public record LoginRequestDto(String username,
 String password) {

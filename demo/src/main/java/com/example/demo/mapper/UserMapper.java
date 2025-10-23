@@ -2,8 +2,8 @@ package com.example.demo.mapper;
 
 import java.util.stream.Collectors;
 
-import com.example.demo.DTO.UserDto;
-import com.example.demo.DTO.UserLoggedDto;
+import com.example.demo.dto.UserDto;
+import com.example.demo.dto.UserLoggedDto;
 import com.example.demo.model.Permission;
 import com.example.demo.model.User;
 
