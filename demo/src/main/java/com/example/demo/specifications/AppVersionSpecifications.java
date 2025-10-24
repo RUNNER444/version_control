@@ -17,12 +17,6 @@ public class AppVersionSpecifications {
         };
     }
 
-    /*private static Specification<AppVersion> isActive () {
-        return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.isTrue(root.get("isActive"));
-        };
-    }*/
-
     public static Specification<AppVersion> filter (String version) {
         return Specification.allOf(versionLike(version));
     }

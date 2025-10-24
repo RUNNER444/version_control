@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PostConstruct;
 
+import com.example.demo.enums.PlatformType;
 import com.example.demo.model.AppVersion;
 import com.example.demo.repository.AppVersionRepository;
 import com.example.demo.specifications.AppVersionSpecifications;
@@ -29,6 +30,8 @@ public class AppVersionService {
     public void init() {
 
     }
+
+    //CRUD
 
     @Cacheable (value = "appVersions", key = "#root.Methodname")
     public List<AppVersion> getAll() {
@@ -80,6 +83,13 @@ public class AppVersionService {
         else {
             return false;
         }
+    }
+
+    //LOGIC
+
+    @Cacheable (value = "latestAppVersion", key = "#platform.name()")
+    public AppVersion getLatestVersion(PlatformType platform) {
+        return appVersionRepository.findTopByPlatformAndIsActiveOrderByReleaseDateDesc(platform, true);
     }
 
     public Page<AppVersion> getByFilter (String version, Pageable pageable) {

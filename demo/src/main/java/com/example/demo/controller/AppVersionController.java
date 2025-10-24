@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.enums.PlatformType;
 import com.example.demo.model.AppVersion;
 import com.example.demo.service.AppVersionService;
 
@@ -34,6 +35,8 @@ public class AppVersionController {
     AppVersionController(AppVersionService appVersionService) {
         this.appVersionService = appVersionService;
     }
+
+    //CRUD
 
     @GetMapping("/appVersions")
     public List<AppVersion> getAppVersions() {
@@ -70,6 +73,15 @@ public class AppVersionController {
         }
         return ResponseEntity.ok().build();
     }
+
+    //LOGIC
+
+    @GetMapping("/appVersions/latest")
+    public ResponseEntity<AppVersion> getLatestAppVersion(@RequestParam (required = true) String platform) {
+        PlatformType platformType = PlatformType.valueOf(platform.toUpperCase());
+        return ResponseEntity.ok().body(appVersionService.getLatestVersion(platformType));
+    }
+    
 
     @GetMapping("/appVersionFilter")
     public ResponseEntity<Object> getByFilter(@RequestParam (required = false) String version,
