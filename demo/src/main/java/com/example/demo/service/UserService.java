@@ -27,8 +27,13 @@ public class UserService {
         return UserMapper.userToUserDto(user);
     }
 
-    public UserDto getUser(String username) {
+    public UserDto getUserDto(String username) {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User with username " + username + "not found"));
         return UserMapper.userToUserDto(user);
+    }
+
+    public User getUser(String username) {
+        User user = userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User with username " + username + "not found"));
+        return user;
     }
 }

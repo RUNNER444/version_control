@@ -14,6 +14,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,7 +24,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "users")
+@Table(name="users")
 public class User implements UserDetails {
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY)
@@ -35,6 +36,9 @@ public class User implements UserDetails {
 
     @ManyToOne
     private Role role;
+
+    @OneToMany(mappedBy = "user")
+    private Set <Token> tokens;
 
     @Override
     public Collection <?extends GrantedAuthority> getAuthorities() {
