@@ -2,14 +2,6 @@ package com.example.demo.controller;
 
 import java.util.List;
 
-import org.springframework.web.bind.annotation.RestController;
-
-import com.example.demo.enums.PlatformType;
-import com.example.demo.model.AppVersion;
-import com.example.demo.service.AppVersionService;
-
-import jakarta.validation.Valid;
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -18,10 +10,16 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.demo.model.AppVersion;
+import com.example.demo.service.AppVersionService;
+
+import jakarta.validation.Valid;
 
 
 
@@ -69,7 +67,7 @@ public class AppVersionController {
     @DeleteMapping ("/appVersions/{id}")
     public ResponseEntity <Void> deleteAppVersion(@PathVariable Long id) {
         if (appVersionService.deleteById(id)) {
-            ResponseEntity.noContent().build();
+            return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok().build();
     }
@@ -78,8 +76,12 @@ public class AppVersionController {
 
     @GetMapping("/appVersions/latest")
     public ResponseEntity<AppVersion> getLatestAppVersion(@RequestParam (required = true) String platform) {
-        PlatformType platformType = PlatformType.valueOf(platform.toUpperCase());
-        return ResponseEntity.ok().body(appVersionService.getLatestVersion(platformType));
+        AppVersion latestVersion = appVersionService.getLatestVersion(platform);
+        if (latestVersion != null) {
+            return ResponseEntity.ok().body(latestVersion);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
     
 

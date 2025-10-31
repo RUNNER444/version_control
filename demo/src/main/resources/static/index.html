@@ -49,6 +49,23 @@
 
         <!-- App Versions Table Section -->
         <div id="content-app-versions" class="tab-content bg-white p-6 rounded-lg shadow-md">
+            <!-- Latest Version Card -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg shadow-sm mb-6 border border-blue-200">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">Get Latest Version</h3>
+                <div class="flex flex-col sm:flex-row items-center gap-3">
+                    <select id="latestVersionPlatform" class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white">
+                        <option value="ANDROID">Android</option>
+                        <option value="IOS">iOS</option>
+                    </select>
+                    <button onclick="fetchLatestVersion()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg shadow transition duration-150">
+                        Get Latest Version
+                    </button>
+                    <div id="latestVersionResult" class="flex-1 text-sm text-gray-700 font-medium hidden">
+                        <!-- Result will be displayed here -->
+                    </div>
+                </div>
+            </div>
+
             <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                 <h2 class="text-2xl font-semibold">App Versions</h2>
                 <div class="flex items-center gap-2">
@@ -124,10 +141,6 @@
                         <option>IOS</option>
                     </select>
                 </div>
-                <div class="mb-4">
-                    <label for="releaseDate" class="block text-sm font-medium text-gray-700">Release Date</label>
-                    <input type="datetime-local" id="releaseDate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                </div>
                  <div class="mb-4">
                     <label for="changelog" class="block text-sm font-medium text-gray-700">Changelog</label>
                     <textarea id="changelog" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
@@ -141,8 +154,8 @@
                     </select>
                 </div>
                 <div class="mb-4 flex items-center">
-                    <input type="checkbox" id="isActive" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                    <label for="isActive" class="ml-2 block text-sm text-gray-900">Is Active</label>
+                    <input type="checkbox" id="active" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="active" class="ml-2 block text-sm text-gray-900">Is Active</label>
                 </div>
                 <div class="flex justify-end space-x-2">
                     <button type="button" onclick="closeModal('appVersionModal')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">Cancel</button>
@@ -233,10 +246,9 @@
                 document.getElementById('appVersionId').value = data.id;
                 document.getElementById('version').value = data.version;
                 document.getElementById('platform').value = data.platform;
-                document.getElementById('releaseDate').value = data.releaseDate ? data.releaseDate.slice(0, 16) : '';
                 document.getElementById('changelog').value = data.changelog;
                 document.getElementById('updateType').value = data.updateType;
-                document.getElementById('isActive').checked = data.isActive;
+                document.getElementById('active').checked = data.active;
             } else {
                 title.textContent = 'Add App Version';
                 form.reset();
@@ -294,7 +306,7 @@
                             <td class="py-2 px-4">${formatDate(v.releaseDate)}</td>
                             <td class="py-2 px-4">${v.changelog || 'N/A'}</td>
                             <td class="py-2 px-4">${v.updateType || 'N/A'}</td>
-                            <td class="py-2 px-4">${v.isActive ? 'Yes' : 'No'}</td>
+                            <td class="py-2 px-4">${v.active ? 'Yes' : 'No'}</td>
                             <td class="py-2 px-4 text-center">
                                 <button onclick='openModal("appVersionModal", ${JSON.stringify(v)})' class="text-blue-500 hover:underline mr-2">Edit</button>
                                 <button onclick="deleteAppVersion(${v.id})" class="text-red-500 hover:underline">Delete</button>
@@ -316,10 +328,9 @@
         const appVersion = {
             version: document.getElementById('version').value,
             platform: document.getElementById('platform').value,
-            releaseDate: document.getElementById('releaseDate').value ? new Date(document.getElementById('releaseDate').value).toISOString() : null,
             changelog: document.getElementById('changelog').value,
             updateType: document.getElementById('updateType').value,
-            isActive: document.getElementById('isActive').checked
+            active: document.getElementById('active').checked
         };
 
         const url = id ? `${API_BASE_URL}/appVersions/${id}` : `${API_BASE_URL}/appVersions`;
@@ -355,6 +366,43 @@
         } catch (error) {
             console.error('Error deleting app version:', error);
             showMessage('Error deleting app version', true);
+        }
+    }
+
+    async function fetchLatestVersion() {
+        const platform = document.getElementById('latestVersionPlatform').value;
+        const resultDiv = document.getElementById('latestVersionResult');
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/appVersions/latest?platform=${platform}`);
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    resultDiv.innerHTML = `<span class="text-red-600">❌ No active version found for ${platform}</span>`;
+                } else {
+                    throw new Error('Failed to fetch latest version');
+                }
+            } else {
+                const latestVersion = await response.json();
+                resultDiv.innerHTML = `
+                    <div class="bg-white p-3 rounded border border-green-300 shadow-sm">
+                        <span class="text-green-600 font-semibold">✓ Latest ${platform} Version:</span>
+                        <span class="text-gray-900 font-bold ml-2">${latestVersion.version}</span>
+                        <span class="text-gray-600 ml-2">|</span>
+                        <span class="text-gray-600 ml-2">${latestVersion.updateType}</span>
+                        <span class="text-gray-600 ml-2">|</span>
+                        <span class="text-gray-600 ml-2">Released: ${formatDate(latestVersion.releaseDate)}</span>
+                    </div>
+                `;
+                showMessage(`Latest ${platform} version found!`);
+            }
+            
+            resultDiv.classList.remove('hidden');
+        } catch (error) {
+            console.error('Error fetching latest version:', error);
+            resultDiv.innerHTML = `<span class="text-red-600">❌ Error fetching latest version</span>`;
+            resultDiv.classList.remove('hidden');
+            showMessage('Error fetching latest version', true);
         }
     }
 
@@ -481,4 +529,3 @@
 
 </body>
 </html>
-

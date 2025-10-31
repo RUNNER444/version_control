@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.cache.annotation.CacheEvict;
@@ -45,6 +46,7 @@ public class AppVersionService {
     @CacheEvict (value = "appVersions", allEntries = true)
     @Transactional
     public AppVersion create (AppVersion appVersion) {
+        appVersion.setReleaseDate(LocalDateTime.now());
         return appVersionRepository.save(appVersion);
     }
 
@@ -62,7 +64,6 @@ public class AppVersionService {
         return appVersionRepository.findById(id).map(existingAppVersion -> {
             existingAppVersion.setVersion(appVersion.getVersion());
             existingAppVersion.setPlatform(appVersion.getPlatform());
-            existingAppVersion.setReleaseDate(appVersion.getReleaseDate());
             existingAppVersion.setChangelog(appVersion.getChangelog());
             existingAppVersion.setUpdateType(appVersion.getUpdateType());
             existingAppVersion.setActive(appVersion.isActive());
@@ -87,9 +88,10 @@ public class AppVersionService {
 
     //LOGIC
 
-    @Cacheable (value = "latestAppVersion", key = "#platform.name()")
-    public AppVersion getLatestVersion(PlatformType platform) {
-        return appVersionRepository.findTopByPlatformAndIsActiveOrderByReleaseDateDesc(platform, true);
+    @Cacheable (value = "latestAppVersion", key = "#platform")
+    public AppVersion getLatestVersion(String platform) {
+        PlatformType platformType = PlatformType.valueOf(platform.toUpperCase());
+        return appVersionRepository.findFirstByPlatformAndActiveTrueOrderByReleaseDateDesc(platformType);
     }
 
     public Page<AppVersion> getByFilter (String version, Pageable pageable) {

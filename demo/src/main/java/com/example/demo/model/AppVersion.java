@@ -40,5 +40,5 @@ public class AppVersion {
     @Column(nullable = false)
     private UpdateType updateType;
     
-    private boolean isActive;
+    private boolean active;
 }

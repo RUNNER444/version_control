@@ -14,5 +14,5 @@ public interface AppVersionRepository extends
     
     List <AppVersion> findAllByVersion(String version);
     
-    AppVersion findTopByPlatformAndIsActiveOrderByReleaseDateDesc(PlatformType platform, boolean isActive);
+    AppVersion findFirstByPlatformAndActiveTrueOrderByReleaseDateDesc(PlatformType platform);
 }
