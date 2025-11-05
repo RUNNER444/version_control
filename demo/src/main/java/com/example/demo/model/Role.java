@@ -12,11 +12,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
 @Entity
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class Role implements GrantedAuthority {
