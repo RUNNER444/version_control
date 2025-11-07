@@ -8,6 +8,7 @@ import com.example.demo.model.UserDevice;
 import com.example.demo.service.UserDeviceService;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -26,14 +27,13 @@ import org.springframework.web.bind.annotation.PutMapping;
 
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api")
 public class UserDeviceController {
 
     private final UserDeviceService userDeviceService;
 
-    UserDeviceController(UserDeviceService userDeviceService) {
-        this.userDeviceService = userDeviceService;
-    }
+    //CRUD
 
     @GetMapping("/userDevices")
     public List<UserDevice> getUserDevices() {
@@ -69,6 +69,16 @@ public class UserDeviceController {
             ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok().build();
+    }
+
+    //LOGIC
+
+    @GetMapping("/userDevices/check")
+    public ResponseEntity<List<UserDevice>> checkOutdatedDevices(@RequestParam(required = true) Long userId,
+        @RequestParam(required = true) String platform) {
+        List<UserDevice> outdatedDevices = userDeviceService.getOutdatedDevices(userId, platform);
+        if (outdatedDevices != null) return ResponseEntity.ok(outdatedDevices);
+        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/userDeviceFilter")

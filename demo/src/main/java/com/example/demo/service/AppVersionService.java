@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 
 import com.example.demo.enums.PlatformType;
 import com.example.demo.model.AppVersion;
@@ -20,17 +21,12 @@ import com.example.demo.specifications.AppVersionSpecifications;
 
 @Service
 @org.springframework.transaction.annotation.Transactional (readOnly = true)
+@RequiredArgsConstructor
 public class AppVersionService {
     private final AppVersionRepository appVersionRepository;
     
-    public AppVersionService(AppVersionRepository appVersionRepository) {
-        this.appVersionRepository = appVersionRepository;
-    }
-    
     @PostConstruct
-    public void init() {
-
-    }
+    public void init() {}
 
     //CRUD
 

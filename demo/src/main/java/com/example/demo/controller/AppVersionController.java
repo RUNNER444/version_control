@@ -20,19 +20,17 @@ import com.example.demo.model.AppVersion;
 import com.example.demo.service.AppVersionService;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 
 
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api")
 public class AppVersionController {
 
     private final AppVersionService appVersionService;
-
-    AppVersionController(AppVersionService appVersionService) {
-        this.appVersionService = appVersionService;
-    }
 
     //CRUD
 
@@ -79,12 +77,10 @@ public class AppVersionController {
         AppVersion latestVersion = appVersionService.getLatestVersion(platform);
         if (latestVersion != null) {
             return ResponseEntity.ok().body(latestVersion);
-        } else {
-            return ResponseEntity.notFound().build();
         }
+        return ResponseEntity.notFound().build();
     }
     
-
     @GetMapping("/appVersionFilter")
     public ResponseEntity<Object> getByFilter(@RequestParam (required = false) String version,
     @PageableDefault (page = 0, size = 10, sort = "version")
