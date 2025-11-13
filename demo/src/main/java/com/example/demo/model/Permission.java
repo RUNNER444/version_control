@@ -28,7 +28,7 @@ public class Permission implements GrantedAuthority {
 
     private String operation;
 
-    @ManyToMany
+    @ManyToMany(mappedBy = "permissions")
     private Set <Role> roles;
 
     @Override

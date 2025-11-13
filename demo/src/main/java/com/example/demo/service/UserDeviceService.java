@@ -33,7 +33,7 @@ public class UserDeviceService {
 
     //CRUD
 
-    @Cacheable (value = "userDevices", key = "#root.Methodname")
+    @Cacheable (value = "userDevices", key = "#root.methodName")
     public List<UserDevice> getAll() {
         return userDeviceRepository.findAll();
     }
@@ -45,6 +45,7 @@ public class UserDeviceService {
     @CacheEvict (value = "userDevices", allEntries = true)
     @Transactional
     public UserDevice create (UserDevice userDevice) {
+        userDevice.setId(null);
         userDevice.setLastSeen(LocalDateTime.now());
         return userDeviceRepository.save(userDevice);
     }

@@ -30,7 +30,7 @@ public class AppVersionService {
 
     //CRUD
 
-    @Cacheable (value = "appVersions", key = "#root.Methodname")
+    @Cacheable (value = "appVersions", key = "#root.methodName")
     public List<AppVersion> getAll() {
         return appVersionRepository.findAll();
     }
@@ -42,6 +42,7 @@ public class AppVersionService {
     @CacheEvict (value = "appVersions", allEntries = true)
     @Transactional
     public AppVersion create (AppVersion appVersion) {
+        appVersion.setId(null);
         appVersion.setReleaseDate(LocalDateTime.now());
         return appVersionRepository.save(appVersion);
     }
