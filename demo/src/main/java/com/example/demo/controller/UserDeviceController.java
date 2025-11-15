@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.dto.UserDeviceRequestDto;
+import com.example.demo.dto.UserDeviceResponseDto;
 import com.example.demo.model.UserDevice;
 import com.example.demo.service.UserDeviceService;
 
@@ -36,25 +38,24 @@ public class UserDeviceController {
     //CRUD
 
     @GetMapping("/userDevices")
-    public List<UserDevice> getUserDevices() {
+    public List<UserDeviceResponseDto> getUserDevices() {
         return userDeviceService.getAll();
     }
 
     @GetMapping("/userDevices/{id}")
-    public ResponseEntity<UserDevice> getUserDevice(@PathVariable Long id) {
+    public ResponseEntity<UserDeviceResponseDto> getUserDevice(@PathVariable Long id) {
         return ResponseEntity.ok().body(userDeviceService.getById(id));
     }
     
 
     @PostMapping("/userDevices")
-    public ResponseEntity<UserDevice> addUserDevice(@RequestBody @Valid UserDevice userDevice) {
-        UserDevice newUserDevice = userDeviceService.create(userDevice);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newUserDevice);
+    public ResponseEntity<UserDeviceResponseDto> addUserDevice(@RequestBody @Valid UserDeviceRequestDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userDeviceService.create(request));
     }
     
     @PutMapping("/userDevices/{id}")
-    public ResponseEntity <UserDevice> editUserDevice(@PathVariable Long id, @RequestBody @Valid UserDevice userDevice) {   
-        UserDevice updated = userDeviceService.update(id, userDevice);
+    public ResponseEntity <UserDeviceResponseDto> editUserDevice(@PathVariable Long id, @RequestBody @Valid UserDeviceRequestDto request) {   
+        UserDeviceResponseDto updated = userDeviceService.update(id, request);
         if (updated != null) {
             return ResponseEntity.ok(updated);
         }
@@ -74,9 +75,9 @@ public class UserDeviceController {
     //LOGIC
 
     @GetMapping("/userDevices/check")
-    public ResponseEntity<List<UserDevice>> checkOutdatedDevices(@RequestParam(required = true) Long userId,
+    public ResponseEntity<List<UserDeviceResponseDto>> checkOutdatedDevices(@RequestParam(required = true) Long userId,
         @RequestParam(required = true) String platform) {
-        List<UserDevice> outdatedDevices = userDeviceService.getOutdatedDevices(userId, platform);
+        List<UserDeviceResponseDto> outdatedDevices = userDeviceService.getOutdatedDevices(userId, platform);
         if (outdatedDevices != null) return ResponseEntity.ok(outdatedDevices);
         return ResponseEntity.notFound().build();
     }

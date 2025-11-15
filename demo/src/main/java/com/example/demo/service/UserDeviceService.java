@@ -15,8 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 
+import com.example.demo.dto.AppVersionResponseDto;
+import com.example.demo.dto.UserDeviceRequestDto;
+import com.example.demo.dto.UserDeviceResponseDto;
 import com.example.demo.enums.PlatformType;
-import com.example.demo.model.AppVersion;
+import com.example.demo.mapper.UserDeviceMapper;
 import com.example.demo.model.UserDevice;
 import com.example.demo.repository.UserDeviceRepository;
 import com.example.demo.specifications.UserDeviceSpecifications;
@@ -34,25 +37,28 @@ public class UserDeviceService {
     //CRUD
 
     @Cacheable (value = "userDevices", key = "#root.methodName")
-    public List<UserDevice> getAll() {
-        return userDeviceRepository.findAll();
-    }
-
-    public List <UserDevice> getAllByUserId (Long id) {
-        return userDeviceRepository.findAllByUserId(id);
+    public List<UserDeviceResponseDto> getAll() {
+        List <UserDevice> userDevices = userDeviceRepository.findAll();
+        List <UserDeviceResponseDto> response = new ArrayList<>();
+        for (UserDevice userDevice : userDevices) {
+            response.add(UserDeviceMapper.userDeviceToUserDeviceResponseDto(userDevice));
+        }
+        return response;
     }
 
     @CacheEvict (value = "userDevices", allEntries = true)
     @Transactional
-    public UserDevice create (UserDevice userDevice) {
-        userDevice.setId(null);
-        userDevice.setLastSeen(LocalDateTime.now());
-        return userDeviceRepository.save(userDevice);
+    public UserDeviceResponseDto create (UserDeviceRequestDto request) {
+        UserDevice newUserDevice = userDeviceRepository.save(new UserDevice(null, request.userId(),
+        request.platform(), request.currentVersion(), LocalDateTime.now()));
+        return UserDeviceMapper.userDeviceToUserDeviceResponseDto(newUserDevice);
     }
 
     @Cacheable (value = "userDevices", key = "#id")
-    public UserDevice getById(Long id) {
-        return userDeviceRepository.findById(id).orElse(null);
+    public UserDeviceResponseDto getById(Long id) {
+        UserDevice userDevice = userDeviceRepository.findById(id).orElse(null);
+        if (userDevice != null) return UserDeviceMapper.userDeviceToUserDeviceResponseDto(userDevice);
+        return null;
     }
 
     @Caching (evict = {
@@ -60,14 +66,15 @@ public class UserDeviceService {
         @CacheEvict(value = {"userDevices", "userDevice"}, key = "#id")
     })
     @Transactional
-    public UserDevice update(Long id, UserDevice userDevice) {
-        return userDeviceRepository.findById(id).map(existingUserDevice -> {
-            existingUserDevice.setUserId(userDevice.getUserId());
-            existingUserDevice.setPlatform(userDevice.getPlatform());
-            existingUserDevice.setCurrentVersion(userDevice.getCurrentVersion());
+    public UserDeviceResponseDto update(Long id, UserDeviceRequestDto request) {
+        UserDevice updated = userDeviceRepository.findById(id).map(existingUserDevice -> {
+            existingUserDevice.setUserId(request.userId());
+            existingUserDevice.setPlatform(request.platform());
+            existingUserDevice.setCurrentVersion(request.currentVersion());
             existingUserDevice.setLastSeen(LocalDateTime.now());
             return userDeviceRepository.save(existingUserDevice);
         }).orElse(null);
+        return UserDeviceMapper.userDeviceToUserDeviceResponseDto(updated);
     }
 
     @Caching (evict = {
@@ -91,16 +98,18 @@ public class UserDeviceService {
         return userDeviceRepository.findAll(UserDeviceSpecifications.filter(userId, version), pageable);
     }
 
-    public List<UserDevice> getOutdatedDevices(Long userId, String platform) {
-        AppVersion latestAppVersion = appVersionService.getLatestVersion(platform);
+    public List<UserDeviceResponseDto> getOutdatedDevices(Long userId, String platform) {
+        AppVersionResponseDto latestAppVersion = appVersionService.getLatestVersion(platform);
         if (latestAppVersion == null) return List.of();
 
         PlatformType platformType = PlatformType.valueOf(platform.toUpperCase());
-        List<UserDevice> allDevices = userDeviceRepository.findAllByPlatformAndUserId(platformType, userId);
-        List<UserDevice> outdatedDevices = new ArrayList<>();
+        List<UserDevice> allUserDevices = userDeviceRepository.findAllByPlatformAndUserId(platformType, userId);
+        List<UserDeviceResponseDto> outdatedDevices = new ArrayList<>();
         
-        for (UserDevice device : allDevices) {
-            if (!device.getCurrentVersion().equals(latestAppVersion.getVersion())) outdatedDevices.add(device);
+        for (UserDevice userDevice : allUserDevices) {
+            if (!userDevice.getCurrentVersion().equals(latestAppVersion.version())) outdatedDevices.add(
+                UserDeviceMapper.userDeviceToUserDeviceResponseDto(userDevice)
+            );
         }
         return outdatedDevices;
     }

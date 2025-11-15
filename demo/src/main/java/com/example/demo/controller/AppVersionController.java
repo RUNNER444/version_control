@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.model.AppVersion;
+import com.example.demo.dto.AppVersionRequestDto;
+import com.example.demo.dto.AppVersionResponseDto;
 import com.example.demo.service.AppVersionService;
 
 import jakarta.validation.Valid;
@@ -35,25 +36,24 @@ public class AppVersionController {
     //CRUD
 
     @GetMapping("/appVersions")
-    public List<AppVersion> getAppVersions() {
+    public List<AppVersionResponseDto> getAppVersions() {
         return appVersionService.getAll();
     }
 
     @GetMapping("/appVersions/{id}")
-    public ResponseEntity<AppVersion> getAppVersion(@PathVariable Long id) {
+    public ResponseEntity<AppVersionResponseDto> getAppVersion(@PathVariable Long id) {
         return ResponseEntity.ok().body(appVersionService.getById(id));
     }
     
 
     @PostMapping("/appVersions")
-    public ResponseEntity<AppVersion> addAppVersion(@RequestBody @Valid AppVersion appVersion) {
-        AppVersion newAppVersion = appVersionService.create(appVersion);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newAppVersion);
+    public ResponseEntity<AppVersionResponseDto> addAppVersion(@RequestBody @Valid AppVersionRequestDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(appVersionService.create(request));
     }
     
     @PutMapping("/appVersions/{id}")
-    public ResponseEntity <AppVersion> editAppVersion(@PathVariable Long id, @RequestBody @Valid AppVersion appVersion) {   
-        AppVersion updated = appVersionService.update(id, appVersion);
+    public ResponseEntity <AppVersionResponseDto> editAppVersion(@PathVariable Long id, @RequestBody @Valid AppVersionRequestDto request) {   
+        AppVersionResponseDto updated = appVersionService.update(id, request);
         if (updated != null) {
             return ResponseEntity.ok(updated);
         }
@@ -73,8 +73,8 @@ public class AppVersionController {
     //LOGIC
 
     @GetMapping("/appVersions/latest")
-    public ResponseEntity<AppVersion> getLatestAppVersion(@RequestParam (required = true) String platform) {
-        AppVersion latestVersion = appVersionService.getLatestVersion(platform);
+    public ResponseEntity<AppVersionResponseDto> getLatestAppVersion(@RequestParam (required = true) String platform) {
+        AppVersionResponseDto latestVersion = appVersionService.getLatestVersion(platform);
         if (latestVersion != null) {
             return ResponseEntity.ok().body(latestVersion);
         }
