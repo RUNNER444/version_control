@@ -23,6 +23,9 @@ import com.example.demo.dto.AppVersionRequestDto;
 import com.example.demo.dto.AppVersionResponseDto;
 import com.example.demo.service.AppVersionService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -32,12 +35,16 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
+@Tag(name = "App Versions", description = "Methods for managing app versions across different platforms")
 public class AppVersionController {
     private static final Logger logger = LoggerFactory.getLogger(AppVersionController.class);
     private final AppVersionService appVersionService;
 
     //CRUD
 
+    @Operation(
+    summary = "Get All App Versions",
+    description = "Retrieves a list of all app versions registered in the system")
     @GetMapping("/appVersions")
     public List<AppVersionResponseDto> getAppVersions() {
         logger.info("Received request to get all AppVersions");
@@ -51,8 +58,13 @@ public class AppVersionController {
         }
     }
 
+    @Operation(
+    summary = "Get App Version by ID",
+    description = "Retrieves a specific app version by its unique identifier")
     @GetMapping("/appVersions/{id}")
-    public ResponseEntity<AppVersionResponseDto> getAppVersion(@PathVariable Long id) {
+    public ResponseEntity<AppVersionResponseDto> getAppVersion(
+    @Parameter(description = "ID of the app version to retrieve", required = true)
+    @PathVariable Long id) {
         logger.info("Received request to get AppVersion with id: {}", id);
 
         try {
@@ -68,9 +80,13 @@ public class AppVersionController {
         }
     }
     
-
+    @Operation(
+    summary = "Create New App Version",
+    description = "Creates a new app version in the system")
     @PostMapping("/appVersions")
-    public ResponseEntity<AppVersionResponseDto> addAppVersion(@RequestBody @Valid AppVersionRequestDto request) {
+    public ResponseEntity<AppVersionResponseDto> addAppVersion(
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "App version data to create", required = true)
+    @RequestBody @Valid AppVersionRequestDto request) {
         logger.info("Received request to add new AppVersion");
 
         try {
@@ -86,8 +102,15 @@ public class AppVersionController {
         }
     }
     
+    @Operation(
+    summary = "Update App Version",
+    description = "Updates an existing app version")
     @PutMapping("/appVersions/{id}")
-    public ResponseEntity <AppVersionResponseDto> editAppVersion(@PathVariable Long id, @RequestBody @Valid AppVersionRequestDto request) {   
+    public ResponseEntity <AppVersionResponseDto> editAppVersion(
+    @Parameter(description = "ID of the app version to update", required = true)
+    @PathVariable Long id,
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Updated app version data", required = true)
+    @RequestBody @Valid AppVersionRequestDto request) {   
         logger.info("Received request to edit AppVersion with id: {}", id);
         
         try {
@@ -104,8 +127,13 @@ public class AppVersionController {
         }
     }
 
+    @Operation(
+    summary = "Delete App Version",
+    description = "Deletes an app version from the system")
     @DeleteMapping ("/appVersions/{id}")
-    public ResponseEntity <Void> deleteAppVersion(@PathVariable Long id) {
+    public ResponseEntity <Void> deleteAppVersion(
+        @Parameter(description = "ID of the app version to delete", required = true)
+        @PathVariable Long id) {
         logger.info("Received request to delete AppVersion with id: {}", id);
 
         try {
@@ -124,8 +152,13 @@ public class AppVersionController {
 
     //LOGIC
 
+    @Operation(
+    summary = "Get Latest App Version",
+    description = "Retrieves the most recent active version for a specific platform")
     @GetMapping("/appVersions/latest")
-    public ResponseEntity<AppVersionResponseDto> getLatestAppVersion(@RequestParam (required = true) String platform) {
+    public ResponseEntity<AppVersionResponseDto> getLatestAppVersion(
+        @Parameter(description = "Platform type (ANDROID or IOS)", required = true)
+        @RequestParam (required = true) String platform) {
         logger.info("Received request to get the latest AppVersion for platform: {}", platform);
         
         try {
@@ -143,8 +176,13 @@ public class AppVersionController {
         }
     }
     
+    @Operation(
+    summary = "Filter App Versions",
+    description = "Search and filter app versions")
     @GetMapping("/appVersionFilter")
-    public ResponseEntity<Object> getByFilter(@RequestParam (required = false) String version,
+    public ResponseEntity<Object> getByFilter(
+    @Parameter(description = "Version to filter by", example = "1.0.0")
+    @RequestParam (required = false) String version,
     @PageableDefault (page = 0, size = 10, sort = "version")
     Pageable pageable) {
         logger.info("Received request to get AppVersions with version: {}", version);

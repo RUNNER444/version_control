@@ -9,6 +9,9 @@ import com.example.demo.dto.UserDeviceRequestDto;
 import com.example.demo.dto.UserDeviceResponseDto;
 import com.example.demo.service.UserDeviceService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -33,12 +36,16 @@ import org.springframework.web.bind.annotation.PutMapping;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
+@Tag(name = "User Devices", description = "Methods for managing user devices and their app versions")
 public class UserDeviceController {
     private final UserDeviceService userDeviceService;
     private static final Logger logger = LoggerFactory.getLogger(UserDeviceController.class);
 
     //CRUD
 
+    @Operation(
+        summary = "Get All User Devices",
+        description = "Retrieves a list of all user devices")
     @GetMapping("/userDevices")
     public List<UserDeviceResponseDto> getUserDevices() {
         logger.info("Received request to get all UserDevices");
@@ -52,8 +59,13 @@ public class UserDeviceController {
         }
     }
 
+    @Operation(
+        summary = "Get User Device by ID",
+        description = "Retrieves a specific user device by its unique identifier")
     @GetMapping("/userDevices/{id}")
-    public ResponseEntity<UserDeviceResponseDto> getUserDevice(@PathVariable Long id) {
+    public ResponseEntity<UserDeviceResponseDto> getUserDevice(
+        @Parameter(description = "ID of the user device", required = true)
+        @PathVariable Long id) {
         logger.info("Received request to get UserDevice with id: {}", id);
         
         try {
@@ -69,9 +81,13 @@ public class UserDeviceController {
         }
     }
     
-
+    @Operation(
+        summary = "Register New User Device",
+        description = "Registers a new user device in the system")
     @PostMapping("/userDevices")
-    public ResponseEntity<UserDeviceResponseDto> addUserDevice(@RequestBody @Valid UserDeviceRequestDto request) {
+    public ResponseEntity<UserDeviceResponseDto> addUserDevice(
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "User device data to create", required = true)
+        @RequestBody @Valid UserDeviceRequestDto request) {
         logger.info("Received request to add new UserDevice");
         
         try {
@@ -87,8 +103,15 @@ public class UserDeviceController {
         }
     }
     
+    @Operation(
+        summary = "Update User Device",
+        description = "Updates an existing user device record")
     @PutMapping("/userDevices/{id}")
-    public ResponseEntity <UserDeviceResponseDto> editUserDevice(@PathVariable Long id, @RequestBody @Valid UserDeviceRequestDto request) {   
+    public ResponseEntity <UserDeviceResponseDto> editUserDevice(
+        @Parameter(description = "ID of the user device to update", required = true)
+        @PathVariable Long id, 
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Updated user device data", required = true)
+        @RequestBody @Valid UserDeviceRequestDto request) {   
         logger.info("Received request to edit UserDevice with id: {}", id);
         
         try {
@@ -105,8 +128,13 @@ public class UserDeviceController {
         }
     }
 
+    @Operation(
+        summary = "Delete User Device",
+        description = "Deletes a user device from the system")
     @DeleteMapping ("/userDevices/{id}")
-    public ResponseEntity <Void> deleteUserDevice(@PathVariable Long id) {
+    public ResponseEntity <Void> deleteUserDevice(
+        @Parameter(description = "ID of the user device to delete", required = true)
+        @PathVariable Long id) {
         logger.info("Received request to delete UserDevice with id: {}", id);
 
         try {
@@ -125,8 +153,14 @@ public class UserDeviceController {
 
     //LOGIC
 
+    @Operation(
+        summary = "Get Outdated Devices",
+        description = "Finds all devices that are not running the latest version")
     @GetMapping("/userDevices/check")
-    public ResponseEntity<List<UserDeviceResponseDto>> checkOutdatedDevices(@RequestParam(required = true) Long userId,
+    public ResponseEntity<List<UserDeviceResponseDto>> checkOutdatedDevices(
+        @Parameter(description = "ID of the user for checking devices", required = true)
+        @RequestParam(required = true) Long userId,
+        @Parameter(description = "Platform type (ANDROID or IOS)", required = true)
         @RequestParam(required = true) String platform) {
         logger.info("Received request to check outdated UserDevices with userId: {}", userId);
         
@@ -148,8 +182,14 @@ public class UserDeviceController {
         }
     }
 
+    @Operation(
+    summary = "Filter User Devices",
+    description = "Search and filter user devices")
     @GetMapping("/userDeviceFilter")
-    public ResponseEntity<Object> getByFilter(@RequestParam (required = false) Long userId,
+    public ResponseEntity<Object> getByFilter(
+    @Parameter(description = "ID of the user to filter by")
+    @RequestParam (required = false) Long userId,
+    @Parameter(description = "Version to filter by", example = "1.0.0")
     @RequestParam (required = false) String version,
     @PageableDefault (page = 0, size = 10, sort = "userId")
     Pageable pageable) {
