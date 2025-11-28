@@ -30,7 +30,11 @@ build/
 !**/src/test/**/build/
 
 ### VS Code ###
-/.vscode/launch.json
+.vscode/launch.json
 
 ### .env ###
 .env
+
+### Logs & Files ####
+logs/
+uploads/*

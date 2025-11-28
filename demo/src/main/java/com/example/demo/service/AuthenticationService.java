@@ -5,6 +5,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +41,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
 
     @Value("${jwt.access.duration.minute}")
     private long accessDurationMin;
@@ -50,36 +53,48 @@ public class AuthenticationService {
     private long refreshDurationSec;
 
     private void addAccessTokenCookie(HttpHeaders headers, Token token) {
+        logger.debug("Adding access token cookie");
         headers.add(HttpHeaders.SET_COOKIE, cookieUtil.createAccessCookie(token.getValue(), accessDurationSec).toString());
     }
 
     private void addRefreshTokenCookie(HttpHeaders headers, Token token) {
+        logger.debug("Adding refresh token cookie");
         headers.add(HttpHeaders.SET_COOKIE, cookieUtil.createRefreshCookie(token.getValue(), refreshDurationSec).toString());
     }
 
     private void revokeAllTokens(User user) {
+        logger.debug("Revoking all tokens for user: {}", user.getUsername());
         Set <Token> tokens = user.getTokens();
         
-        tokens.forEach(token -> {if(token.getExpiringDate().isBefore(LocalDateTime.now())) tokenRepository.delete(token);
-        else if(!token.isDisabled()) {
-            token.setDisabled(true);
-            tokenRepository.save(token);
-        }});
+        tokens.forEach(token -> {
+            if(token.getExpiringDate().isBefore(LocalDateTime.now())) tokenRepository.delete(token);
+            else if(!token.isDisabled()) {
+                token.setDisabled(true);
+                tokenRepository.save(token);
+            }
+        });
+        logger.debug("Token revocation process completed for user: {}", user.getUsername());
     }
 
     public ResponseEntity<LoginResponseDto> login(LoginRequestDto request, String access, String refresh) {
+        logger.info("Attempting to login user: {}", request.username());
+        
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
             request.username(), request.password()));
+
         User user = userService.getUser(request.username());
+        logger.debug("User authenticated successfully: {}", user.getUsername());
 
         boolean accessValid = jwtTokenProvider.isValid(access);
         boolean refreshValid = jwtTokenProvider.isValid(refresh);
+        logger.debug("Results of token validation for user {} - Access: {}, Refresh: {}", user.getUsername(), accessValid, refreshValid);
 
         HttpHeaders headers = new HttpHeaders();
 
         revokeAllTokens(user);
 
         if (!accessValid) {
+            logger.debug("Generating new access token for user: {}", user.getUsername());
             Token newAccess = jwtTokenProvider.generatedAccessToken(Map.of("role", user.getRole().getAuthority()),
             accessDurationMin, ChronoUnit.MINUTES, user);
 
@@ -89,6 +104,7 @@ public class AuthenticationService {
         }
 
         if (!refreshValid || accessValid) {
+            logger.debug("Generating new refresh token for user: {}", user.getUsername());
             Token newRefresh = jwtTokenProvider.generatedRefreshToken(refreshDurationDate, ChronoUnit.MINUTES, user);
 
             newRefresh.setUser(user);
@@ -97,15 +113,21 @@ public class AuthenticationService {
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        logger.info("Login completed successfully for user: {}", user.getUsername());
+        
         return ResponseEntity.ok().headers(headers).body(new LoginResponseDto(true, user.getRole().getName()));
     }
 
     public ResponseEntity <LoginResponseDto> refresh(String refreshToken) {
+        logger.info("Attempting to refresh token");
+        
         if (!jwtTokenProvider.isValid(refreshToken)) {
+            logger.warn("Token refresh failed: Invalid token provided");
             throw new RuntimeException("token is invalid");
         }
         
         User user = userService.getUser(jwtTokenProvider.getUsername(refreshToken));
+        logger.debug("Token refresh request for user: {}", user.getUsername());
 
         Token newAccess = jwtTokenProvider.generatedAccessToken(Map.of("role", user.getRole().getAuthority()),
             accessDurationMin, ChronoUnit.MINUTES, user);
@@ -114,7 +136,8 @@ public class AuthenticationService {
         HttpHeaders headers = new HttpHeaders();
         addAccessTokenCookie(headers, newAccess);
         tokenRepository.save(newAccess);
-        
+        logger.info("Token refresh successful for user: {}", user.getUsername());
+
         return ResponseEntity.ok().headers(headers).body(new LoginResponseDto(true, user.getRole().getName()));
     }
 
@@ -122,11 +145,14 @@ public class AuthenticationService {
         SecurityContextHolder.clearContext();
 
         User user = userService.getUser(jwtTokenProvider.getUsername(accessToken));
+        logger.info("Attempting logout for user: {}", user.getUsername());
+
         revokeAllTokens(user);
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.SET_COOKIE, cookieUtil.deleteAccessCookie().toString());
         headers.add(HttpHeaders.SET_COOKIE, cookieUtil.deleteRefreshCookie().toString());
+        logger.info("Logout successful for user: {}", user.getUsername());
 
         return ResponseEntity.ok().headers(headers).body(new LoginResponseDto(false, null));
     }
@@ -135,9 +161,11 @@ public class AuthenticationService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication instanceof AnonymousAuthenticationToken){
+            logger.warn("Info requested by unauthenticated user");
             throw new RuntimeException("User is not authenticated");
         }
 
+        logger.debug("Retrieving info for authenticated user: {}", authentication.getName());
         User user = userService.getUser(authentication.getName());
 
         return UserMapper.userToUserLoggedDto(user);
@@ -147,20 +175,25 @@ public class AuthenticationService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication instanceof AnonymousAuthenticationToken){
+            logger.warn("Password change attempted by unauthenticated user");
             throw new RuntimeException("User is not authenticated");
         }
 
         User user = userService.getUser(authentication.getName());
+        logger.info("Attempting password change for user: {}", user.getUsername());
 
         if(!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
-            throw new BadCredentialsException("Current password is invalid");
+            logger.warn("Password change failed for user {}: Invalid old password", user.getUsername());
+            throw new BadCredentialsException("Old password is invalid");
         }
         if (!request.newPassword().matches(request.newAgain())) {
+            logger.warn("Password change failed for user {}: New passwords do not match", user.getUsername());
             throw new BadCredentialsException("New passwords don't match each other");
         }
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userService.saveUser(user);
+        logger.debug("New password saved for user: {}", user.getUsername());
 
         revokeAllTokens(user);
         SecurityContextHolder.clearContext();
@@ -168,6 +201,7 @@ public class AuthenticationService {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.SET_COOKIE, cookieUtil.deleteAccessCookie().toString());
         headers.add(HttpHeaders.SET_COOKIE, cookieUtil.deleteRefreshCookie().toString());
+        logger.info("Password changed successfully for user: {}. User logged out.", user.getUsername());
 
         return ResponseEntity.ok().headers(headers).body(new LoginResponseDto(false, null));
     }

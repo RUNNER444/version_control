@@ -42,3 +42,20 @@ jwt:
             days: 7
             second: 604800
         cookie-name: refresh-token
+---
+logging:
+    level:
+        root: INFO
+        com.example.demo: DEBUG
+    file:
+        name: logs/application.log
+    pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %level - %msg%n"
+---
+spring:
+    servlet:
+        multipart:
+            location: uploads/
+            max-file-size: 10MB
+            max-request-size: 10MB
+            enabled: true

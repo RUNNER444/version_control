@@ -26,7 +26,7 @@ public class AppVersion {
 
     @NotBlank
     @Size(min = 2, max = 100)
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String version;
 
     @Column(nullable = false, length = 50)
