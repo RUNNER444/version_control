@@ -134,6 +134,33 @@ public class AppVersionService {
         }
     }
 
+    public AppVersionResponseDto getByVersionAndPlatform(String version, PlatformType platformType) {
+        logger.info("Attempting to retrieve AppVersion with version {} and platform {}", version, platformType);
+
+        try {
+            logger.debug("Querying database for exact same AppVersion: {}", version);
+            AppVersion appVersion = appVersionRepository.findFirstByVersionAndPlatform(version, platformType);
+
+            if (appVersion != null) {
+                logger.info("Found exact same AppVersion in database: {}", version);
+                return AppVersionMapper.appVersionToAppVersionResponseDto(appVersion);
+            }
+
+            logger.warn("No such AppVersion in database as {}", version);
+            return null;
+        }
+        catch (IllegalArgumentException e) {
+            logger.error("Invalid AppVersion or platformType provided. Error: {}", e.getMessage(), e);
+            throw e;
+        }
+        catch (Exception e) {
+            logger.error("Unexpected error occurred while retrieving exact AppVersion. Error: {}", 
+                        e.getMessage(), e);
+            throw e;
+        }
+        
+    }
+
     //LOGIC
 
     @Cacheable (value = "latestAppVersion", key = "#platform")

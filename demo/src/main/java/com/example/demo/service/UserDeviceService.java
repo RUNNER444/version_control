@@ -136,6 +136,34 @@ public class UserDeviceService {
         }
     }
 
+    @Caching (evict = {
+        @CacheEvict(value = "userDevices", allEntries = true),
+        @CacheEvict(value = {"userDevices", "userDevice"}, key = "#id")
+    })
+    @Transactional
+    public UserDeviceResponseDto updateOnlyVersion (Long id, String version) {
+        logger.info("Attempting to update AppVersion on UserDevice with ID: {}", id);
+        
+        UserDevice updated = userDeviceRepository.findById(id).map(existingUserDevice -> {
+            logger.debug("Values before update - userId: {}, platform: {}, currentVersion: {}, lastSeen: {}", 
+                        existingUserDevice.getUserId(), existingUserDevice.getPlatform(), existingUserDevice.getCurrentVersion(), existingUserDevice.getLastSeen());
+            
+            existingUserDevice.setCurrentVersion(version);
+            existingUserDevice.setLastSeen(LocalDateTime.now());
+
+            UserDevice savedDevice = userDeviceRepository.save(existingUserDevice);
+            logger.info("Successfully updated AppVersion on UserDevice with ID: {}", id);
+            
+            return savedDevice;
+        }).orElse(null);
+
+        if (updated == null) {
+            logger.warn("Failed to update AppVersion on UserDevice with ID: {} - entity not found", id);
+        }
+
+        return UserDeviceMapper.userDeviceToUserDeviceResponseDto(updated);
+    }
+
     //LOGIC
 
     public Page<UserDevice> getByFilter (Long userId, String version, Pageable pageable) {

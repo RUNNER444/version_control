@@ -48,16 +48,12 @@ public class UploadController {
         catch (IllegalArgumentException e) {
             logger.warn("Invalid file upload request: {}", e.getMessage());
 
-            return ResponseEntity.badRequest().body(new UploadResponseDto(
-                0, 0, 0
-            ));
+            return ResponseEntity.badRequest().body(null);
         }
         catch (Exception e) {
             logger.error("Error while uploading file: {}", e.getMessage(), e);
 
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new UploadResponseDto(
-                0, 0, 0
-            ));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
     
@@ -81,16 +77,12 @@ public class UploadController {
         catch (IllegalArgumentException e) {
             logger.warn("Invalid file upload request: {}", e.getMessage());
 
-            return ResponseEntity.badRequest().body(new UploadResponseDto(
-                0, 0, 0
-            ));
+            return ResponseEntity.badRequest().body(null);
         }
         catch (Exception e) {
             logger.error("Error while uploading file: {}", e.getMessage(), e);
 
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new UploadResponseDto(
-                0, 0, 0
-            ));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 }

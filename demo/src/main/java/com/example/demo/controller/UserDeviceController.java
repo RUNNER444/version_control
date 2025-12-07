@@ -1,6 +1,5 @@
 package com.example.demo.controller;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.RestController;
@@ -47,15 +46,15 @@ public class UserDeviceController {
         summary = "Get All User Devices",
         description = "Retrieves a list of all user devices")
     @GetMapping("/userDevices")
-    public List<UserDeviceResponseDto> getUserDevices() {
+    public ResponseEntity<List<UserDeviceResponseDto>> getUserDevices() {
         logger.info("Received request to get all UserDevices");
 
         try {
-            return userDeviceService.getAll();
+            return ResponseEntity.ok().body(userDeviceService.getAll());
         }
         catch (Exception e) {
             logger.error("Error while getting all UserDevices: {}", e.getMessage(), e);
-            return new ArrayList<>();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
@@ -77,7 +76,7 @@ public class UserDeviceController {
         }
         catch (Exception e) {
             logger.error("Error while getting UserDevice with id: {}. Error: {}", id, e.getMessage(), e);
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
     
@@ -124,7 +123,7 @@ public class UserDeviceController {
         }
         catch (Exception e) {
             logger.error("Error while updating UserDevice with id: {}. Error: {}", id, e.getMessage(), e);
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
@@ -139,7 +138,7 @@ public class UserDeviceController {
 
         try {
             if (userDeviceService.deleteById(id)) {
-                ResponseEntity.noContent().build();
+                return ResponseEntity.noContent().build();
             }
 
             logger.warn("Can't delete UserDevice with id: {}", id);
@@ -154,8 +153,8 @@ public class UserDeviceController {
     //LOGIC
 
     @Operation(
-        summary = "Get Outdated Devices",
-        description = "Finds all devices that are not running the latest version")
+        summary = "Get user's Outdated Devices",
+        description = "Finds all devices of specified user that are not running the latest version")
     @GetMapping("/userDevices/check")
     public ResponseEntity<List<UserDeviceResponseDto>> checkOutdatedDevices(
         @Parameter(description = "ID of the user for checking devices", required = true)
@@ -167,7 +166,10 @@ public class UserDeviceController {
         try {
             List<UserDeviceResponseDto> outdatedDevices = userDeviceService.getOutdatedDevices(userId, platform);
 
-            if (outdatedDevices != null) return ResponseEntity.ok(outdatedDevices);
+            if (outdatedDevices != null) {
+                logger.info("Found {} outdated devices", outdatedDevices.size());
+                return ResponseEntity.ok(outdatedDevices);
+            } 
 
             logger.info("All versions are up to date");
             return ResponseEntity.notFound().build();
@@ -178,7 +180,7 @@ public class UserDeviceController {
         }
         catch (Exception e) {
             logger.error("Error while checking outdated UserDevices with userId: {}. Error: {}", userId, e.getMessage(), e);
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 

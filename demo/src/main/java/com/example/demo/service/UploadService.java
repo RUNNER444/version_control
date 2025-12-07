@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -70,9 +72,17 @@ public class UploadService {
     public UploadResponseDto importAppVersions (MultipartFile file) {
         logger.info("Starting import of AppVersions from file: {}", file.getOriginalFilename());
 
-        validateFile(file);
         int successCount = 0;
         int failureCount = 0;
+        List <String> errorList = new ArrayList<>();
+        
+        try {
+            logger.warn("File validation failed: {}", file.getOriginalFilename());
+            validateFile(file);
+        }
+        catch (IllegalArgumentException e) {
+            errorList.add(file.getOriginalFilename() + " : " + e.getMessage());
+        }
 
         try {
             Path savedFile = saveFile(file);
@@ -99,6 +109,7 @@ public class UploadService {
                         }
                         catch (Exception e) {
                             failureCount++;
+                            errorList.add(file.getOriginalFilename() + " : " + e.getMessage());
                             logger.warn("Failed to import row {}: {}", rowNumber, e);
                         }
                         rowNumber++;
@@ -109,7 +120,8 @@ public class UploadService {
 
             return new UploadResponseDto(successCount + failureCount,
                 successCount,
-                failureCount
+                failureCount,
+                errorList
             );
         }
         catch (IOException e) {
@@ -121,9 +133,17 @@ public class UploadService {
     public UploadResponseDto importUserDevices(MultipartFile file) {
         logger.info("Starting import of UserDevices from file: {}", file.getOriginalFilename());
 
-        validateFile(file);
         int successCount = 0;
         int failureCount = 0;
+        List <String> errorList = new ArrayList<>();
+
+        try {
+            logger.warn("File validation failed: {}", file.getOriginalFilename());
+            validateFile(file);
+        }
+        catch (IllegalArgumentException e) {
+            errorList.add(file.getOriginalFilename() + " : " + e.getMessage());
+        }
 
         try {
             Path savedFile = saveFile(file);
@@ -149,6 +169,7 @@ public class UploadService {
                         }
                         catch (Exception e) {
                             failureCount++;
+                            errorList.add(file.getOriginalFilename() + " : " + e.getMessage());
                             logger.warn("Failed to import row {}: {}", rowNumber, e);
                         }
                         rowNumber++;
@@ -159,7 +180,8 @@ public class UploadService {
 
             return new UploadResponseDto(successCount + failureCount,
                 successCount,
-                failureCount
+                failureCount,
+                errorList
             );
         }
         catch (IOException e) {

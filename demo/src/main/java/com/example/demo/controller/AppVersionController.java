@@ -1,6 +1,5 @@
 package com.example.demo.controller;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -46,15 +45,15 @@ public class AppVersionController {
     summary = "Get All App Versions",
     description = "Retrieves a list of all app versions registered in the system")
     @GetMapping("/appVersions")
-    public List<AppVersionResponseDto> getAppVersions() {
+    public ResponseEntity<List<AppVersionResponseDto>> getAppVersions() {
         logger.info("Received request to get all AppVersions");
         
         try {
-            return appVersionService.getAll();
+            return ResponseEntity.ok().body(appVersionService.getAll());
         }
         catch (Exception e) {
             logger.error("Error while getting all AppVersions: {}", e.getMessage(), e);
-            return new ArrayList<>();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
@@ -76,7 +75,7 @@ public class AppVersionController {
         }
         catch (Exception e) {
             logger.error("Error while getting AppVersion with id: {}. Error: {}", id, e.getMessage(), e);
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
     
@@ -123,7 +122,7 @@ public class AppVersionController {
         }
         catch (Exception e) {
             logger.error("Error while updating AppVersion with id: {}. Error: {}", id, e.getMessage(), e);
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 

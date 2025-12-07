@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import com.example.demo.enums.PlatformType;
+import com.example.demo.enums.UpdateType;
 import com.example.demo.model.AppVersion;
 
 public interface AppVersionRepository extends 
@@ -13,6 +14,10 @@ public interface AppVersionRepository extends
     List <AppVersion> findByVersionStartingWithIgnoreCase(String title);
     
     List <AppVersion> findAllByVersion(String version);
+
+    List <AppVersion> findAllByUpdateType(UpdateType updateType);
     
     AppVersion findFirstByPlatformAndActiveTrueOrderByReleaseDateDesc(PlatformType platform);
+
+    AppVersion findFirstByVersionAndPlatform(String version, PlatformType platform);
 }

@@ -34,8 +34,8 @@ jwt:
     secret: ${JWT_SECRET}
     access:
         duration:
-            minute: 5
-            second: 300
+            minute: 10
+            second: 600
         cookie-name: access-token
     refresh:
         duration:
