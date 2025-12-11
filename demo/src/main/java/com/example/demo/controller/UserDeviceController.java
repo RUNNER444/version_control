@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.UserDeviceRequestDto;
 import com.example.demo.dto.UserDeviceResponseDto;
+import com.example.demo.service.ReportService;
 import com.example.demo.service.UserDeviceService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,6 +40,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 @Tag(name = "User Devices", description = "Methods for managing user devices and their app versions")
 public class UserDeviceController {
     private final UserDeviceService userDeviceService;
+    private final ReportService reportService;
     private static final Logger logger = LoggerFactory.getLogger(UserDeviceController.class);
 
     //CRUD
@@ -175,13 +178,30 @@ public class UserDeviceController {
             return ResponseEntity.notFound().build();
         }
         catch (IllegalArgumentException e) {
-            logger.warn("UserId value is invalid: {}", e.getMessage());
+            logger.warn("UserId value is invalid or platform: {}", e.getMessage());
             return ResponseEntity.notFound().build();
         }
         catch (Exception e) {
             logger.error("Error while checking outdated UserDevices with userId: {}. Error: {}", userId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
+    }
+
+    @Operation(
+        summary = "Generate report for user's outdated devices",
+        description = "Packs all user's outdated devices into single html file with all important information about them")
+    @GetMapping(value = "/userDevices/getReport")
+    public ResponseEntity<String> downloadOutdatedForUser(
+        @Parameter(description = "ID of the user for checking devices", required = true)
+        @RequestParam(required = true) Long userId,
+        @Parameter(description = "Platform type (ANDROID or IOS)", required = true)
+        @RequestParam(required = true) String platform) {
+        logger.info("Received request to generate report for outdated devices for user {}", userId);
+        
+        String generatedHtml = reportService.getOutdatedDevicesReport(userId, platform);
+        logger.info("Generated report is being send to user..");
+
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=outdated_report.html").body(generatedHtml);
     }
 
     @Operation(
