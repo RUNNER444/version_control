@@ -37,23 +37,23 @@ public class UpdateService {
 
             if (currentVersion.updateType() == UpdateType.OPTIONAL) {
                 logger.info("Device {} has an optional update to app version: {}", id, latestVersion.version());
-                return new UpdateResponseDto(id, true, deviceVersion, latestVersion.version(), UpdateType.OPTIONAL);
+                return new UpdateResponseDto(id, userDevice.userId(), true, deviceVersion, latestVersion.version(), UpdateType.OPTIONAL);
             }
 
             if (currentVersion.updateType() == UpdateType.MANDATORY) {
                 if (currentVersion.active()) logger.info("For proper work device {} is required to be updated to version: {}", id, latestVersion.version());
                 else logger.info("IMMEDIATELY UPDATE! Device {} has an app version that's no longer supported!", id);
-                return new UpdateResponseDto(id, true, deviceVersion, latestVersion.version(), UpdateType.MANDATORY);
+                return new UpdateResponseDto(id, userDevice.userId(), true, deviceVersion, latestVersion.version(), UpdateType.MANDATORY);
             }
 
             if (currentVersion.updateType() == UpdateType.DEPRECATED) {
                 if (currentVersion.active()) logger.info("Device {} has a deprecated app version. Need an update!", id);
                 else logger.info("IMMEDIATELY UPDATE! Device {} has a deprecated app version that's no longer supported!", id);
-                return new UpdateResponseDto(id, true, deviceVersion, latestVersion.version(), UpdateType.DEPRECATED);
+                return new UpdateResponseDto(id, userDevice.userId(), true, deviceVersion, latestVersion.version(), UpdateType.DEPRECATED);
             }
 
             logger.info("Device {} is up to date and has the latest release", id);
-            return new UpdateResponseDto(id, false, deviceVersion, deviceVersion, UpdateType.UNAVAILABLE);
+            return new UpdateResponseDto(id, userDevice.userId(), false, deviceVersion, deviceVersion, UpdateType.UNAVAILABLE);
         }
         catch (IllegalArgumentException e) {
             logger.error("Invalid id is provided. Must be a number. Error: {}", e.getMessage(), e);
@@ -102,14 +102,14 @@ public class UpdateService {
             UpdateResponseDto updateData = checkUserDeviceForUpdate(id);
 
             if (updateData.updateType() == UpdateType.UNAVAILABLE) {
-                return new UpdateResponseDto(id, false, updateData.currentVersion(), updateData.currentVersion(), UpdateType.UNAVAILABLE); 
+                return new UpdateResponseDto(id, updateData.userId(), false, updateData.currentVersion(), updateData.currentVersion(), UpdateType.UNAVAILABLE); 
             }
 
             logger.debug("Updating the version of user device to the latest available one");
             userDeviceService.updateOnlyVersion(id, updateData.latestVersion());
 
             logger.info("Successfully updated user device {} to the latest version: {}", id, updateData.latestVersion());
-            return new UpdateResponseDto(id, false, updateData.latestVersion(), updateData.latestVersion(), UpdateType.UNAVAILABLE);
+            return new UpdateResponseDto(id, updateData.userId(), false, updateData.latestVersion(), updateData.latestVersion(), UpdateType.UNAVAILABLE);
         }
         catch (IllegalArgumentException e) {
             logger.error("Invalid id is provided. Must be a number. Error: {}", e.getMessage(), e);

@@ -2,12 +2,13 @@ package com.example.demo.dto;
 
 import com.example.demo.enums.UpdateType;
 
-public record UpdateResponseDto(Long userDeviceId,
+public record NotificationRequestDto(
+    Long deviceId,
     Long userId,
-    boolean updateAvailable,
     String currentVersion,
     String latestVersion,
-    UpdateType updateType
+    UpdateType updateType,
+    String message
 ) {
 
 }
