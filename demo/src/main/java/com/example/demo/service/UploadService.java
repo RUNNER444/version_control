@@ -40,53 +40,39 @@ public class UploadService {
     private String uploadLocation;
 
     private void validateFile(MultipartFile file) {
-        logger.debug("Attemting to validate file: {}", file.getOriginalFilename());
-
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");
         }
-
         String filename = file.getOriginalFilename();
         if (filename == null || !filename.toLowerCase().endsWith(".csv")) {
             throw new IllegalArgumentException("The system supports only CSV files");
         }
-
-        logger.info("File validation passed: {}", filename);
+        logger.debug("File validation passed: {}", filename);
     }
 
     private Path saveFile(MultipartFile file) throws IOException {
-        logger.debug("Attempting to save file: {}", file.getOriginalFilename());
-
         String timestamp = LocalDateTime.now().toString().replaceAll(":", "-");
         String filename = timestamp + "_" + file.getOriginalFilename();
-
         Path targetLocation = Paths.get(uploadLocation).toAbsolutePath().normalize().resolve(filename);
-        logger.debug("File copying target location is setted up");
 
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
         logger.info("File saved to: {}", targetLocation);
-
         return targetLocation;
     }
 
     public UploadResponseDto importAppVersions (MultipartFile file) {
-        logger.info("Starting import of AppVersions from file: {}", file.getOriginalFilename());
-
         int successCount = 0;
         int failureCount = 0;
         List <String> errorList = new ArrayList<>();
         
-        try {
-            logger.warn("File validation failed: {}", file.getOriginalFilename());
-            validateFile(file);
-        }
+        try {validateFile(file);}
         catch (IllegalArgumentException e) {
             errorList.add(file.getOriginalFilename() + " : " + e.getMessage());
+            throw new IllegalArgumentException("File validation failed");
         }
 
         try {
             Path savedFile = saveFile(file);
-
             CSVFormat format =
             CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).setIgnoreHeaderCase(true).setTrim(true).get();
 
@@ -104,8 +90,6 @@ public class UploadService {
 
                             appVersionService.create(request);
                             successCount++;
-
-                            logger.debug("Successfully imported row {}: {}", rowNumber, request.version());
                         }
                         catch (Exception e) {
                             failureCount++;
@@ -117,7 +101,6 @@ public class UploadService {
             }
 
             logger.info("AppVersion import completed. Success: {}, Failures: {}", successCount, failureCount);
-
             return new UploadResponseDto(successCount + failureCount,
                 successCount,
                 failureCount,
@@ -125,29 +108,22 @@ public class UploadService {
             );
         }
         catch (IOException e) {
-            logger.error("Error reading CSV file: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to process CSV file: " + e.getMessage());
         }
     }
 
     public UploadResponseDto importUserDevices(MultipartFile file) {
-        logger.info("Starting import of UserDevices from file: {}", file.getOriginalFilename());
-
         int successCount = 0;
         int failureCount = 0;
         List <String> errorList = new ArrayList<>();
 
-        try {
-            logger.warn("File validation failed: {}", file.getOriginalFilename());
-            validateFile(file);
-        }
+        try {validateFile(file);}
         catch (IllegalArgumentException e) {
             errorList.add(file.getOriginalFilename() + " : " + e.getMessage());
         }
 
         try {
             Path savedFile = saveFile(file);
-
             CSVFormat format =
             CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).setIgnoreHeaderCase(true).setTrim(true).get();
 
@@ -164,8 +140,6 @@ public class UploadService {
 
                             userDeviceService.create(request);
                             successCount++;
-
-                            logger.debug("Successfully imported row {}: {}", rowNumber, request.userId());
                         }
                         catch (Exception e) {
                             failureCount++;
@@ -185,7 +159,6 @@ public class UploadService {
             );
         }
         catch (IOException e) {
-            logger.error("Error reading CSV file: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to process CSV file: " + e.getMessage());
         }
     }

@@ -21,14 +21,12 @@ public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     
     public List<UserDto> getUsers() {
-        logger.debug("Attempting to retrieve all users");
         List <UserDto> users = userRepository.findAll().stream().map(UserMapper::userToUserDto).toList();
         logger.info("Successfully retrieved {} users", users.size());
         return users;
     }
 
     public UserDto getUser(Long id) {
-        logger.debug("Attempting to retrieve user with ID: {}", id);
         User user = userRepository.findById(id).orElseThrow(() -> {
             logger.warn("User with ID {} not found", id);
             return new ResourceNotFoundException("User with id " + id + "not found");
@@ -39,7 +37,6 @@ public class UserService {
     }
 
     public UserDto getUserDto(String username) {
-        logger.debug("Attempting to retrieve UserDto for username: {}", username);
         User user = userRepository.findByUsername(username).orElseThrow(() -> {
             logger.warn("User with username '{}' not found", username);
             return new ResourceNotFoundException("User with username " + username + "not found");
@@ -50,7 +47,6 @@ public class UserService {
     }
 
     public User getUser(String username) {
-        logger.debug("Attempting to retrieve User entity for username: {}", username);
         User user = userRepository.findByUsername(username).orElseThrow(() -> {
             logger.warn("User entity with username '{}' not found", username);
             return new ResourceNotFoundException("User with username " + username + "not found");
@@ -61,8 +57,6 @@ public class UserService {
     }
 
     public void saveUser(User user) {
-        logger.debug("Attempting to save user: {}", user.getUsername());
-        
         userRepository.save(user);
         logger.info("Successfully saved user: {}", user.getUsername());
     }

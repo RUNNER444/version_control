@@ -63,7 +63,6 @@ public class AuthenticationService {
     }
 
     private void revokeAllTokens(User user) {
-        logger.debug("Revoking all tokens for user: {}", user.getUsername());
         Set <Token> tokens = user.getTokens();
         
         tokens.forEach(token -> {
@@ -77,11 +76,8 @@ public class AuthenticationService {
     }
 
     public ResponseEntity<LoginResponseDto> login(LoginRequestDto request, String access, String refresh) {
-        logger.info("Attempting to login user: {}", request.username());
-        
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
             request.username(), request.password()));
-
         User user = userService.getUser(request.username());
         logger.debug("User authenticated successfully: {}", user.getUsername());
 
@@ -94,19 +90,15 @@ public class AuthenticationService {
         revokeAllTokens(user);
 
         if (!accessValid) {
-            logger.debug("Generating new access token for user: {}", user.getUsername());
             Token newAccess = jwtTokenProvider.generatedAccessToken(Map.of("role", user.getRole().getAuthority()),
             accessDurationMin, ChronoUnit.MINUTES, user);
-
             newAccess.setUser(user);
             addAccessTokenCookie(headers, newAccess);
             tokenRepository.save(newAccess);
         }
 
         if (!refreshValid || accessValid) {
-            logger.debug("Generating new refresh token for user: {}", user.getUsername());
             Token newRefresh = jwtTokenProvider.generatedRefreshToken(refreshDurationDate, ChronoUnit.MINUTES, user);
-
             newRefresh.setUser(user);
             addRefreshTokenCookie(headers, newRefresh);
             tokenRepository.save(newRefresh);
@@ -119,16 +111,12 @@ public class AuthenticationService {
     }
 
     public ResponseEntity <LoginResponseDto> refresh(String refreshToken) {
-        logger.info("Attempting to refresh token");
-        
         if (!jwtTokenProvider.isValid(refreshToken)) {
             logger.warn("Token refresh failed: Invalid token provided");
-            throw new RuntimeException("token is invalid");
+            throw new RuntimeException("Invalid token provided");
         }
         
         User user = userService.getUser(jwtTokenProvider.getUsername(refreshToken));
-        logger.debug("Token refresh request for user: {}", user.getUsername());
-
         Token newAccess = jwtTokenProvider.generatedAccessToken(Map.of("role", user.getRole().getAuthority()),
             accessDurationMin, ChronoUnit.MINUTES, user);
         
@@ -143,10 +131,7 @@ public class AuthenticationService {
 
     public ResponseEntity <LoginResponseDto> logout(String accessToken) {
         SecurityContextHolder.clearContext();
-
         User user = userService.getUser(jwtTokenProvider.getUsername(accessToken));
-        logger.info("Attempting logout for user: {}", user.getUsername());
-
         revokeAllTokens(user);
 
         HttpHeaders headers = new HttpHeaders();
@@ -159,7 +144,6 @@ public class AuthenticationService {
 
     public UserLoggedDto info() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         if (authentication instanceof AnonymousAuthenticationToken){
             logger.warn("Info requested by unauthenticated user");
             throw new RuntimeException("User is not authenticated");
@@ -180,8 +164,6 @@ public class AuthenticationService {
         }
 
         User user = userService.getUser(authentication.getName());
-        logger.info("Attempting password change for user: {}", user.getUsername());
-
         if(!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
             logger.warn("Password change failed for user {}: Invalid old password", user.getUsername());
             throw new BadCredentialsException("Old password is invalid");
@@ -193,8 +175,6 @@ public class AuthenticationService {
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userService.saveUser(user);
-        logger.debug("New password saved for user: {}", user.getUsername());
-
         revokeAllTokens(user);
         SecurityContextHolder.clearContext();
 

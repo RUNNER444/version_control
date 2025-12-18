@@ -24,6 +24,8 @@ import com.example.demo.model.AppVersion;
 import com.example.demo.repository.AppVersionRepository;
 import com.example.demo.specifications.AppVersionSpecifications;
 
+import jakarta.persistence.EntityNotFoundException;
+
 @Service
 @org.springframework.transaction.annotation.Transactional (readOnly = true)
 @RequiredArgsConstructor
@@ -35,17 +37,13 @@ public class AppVersionService {
     //CRUD
 
     @Cacheable (value = "appVersions", key = "#root.methodName")
-    public List<AppVersionResponseDto> getAll() {
-        logger.debug("Attempting to retrieve all AppVersions from database");
-
+    public List<AppVersionResponseDto> getAll() {;
         List <AppVersion> appVersions = appVersionRepository.findAll();
-        logger.debug("Retrieved {} AppVersions from database", appVersions.size());
-        
         List <AppVersionResponseDto> response = new ArrayList<>(); 
+
         for (AppVersion appVersion : appVersions) {
             response.add(AppVersionMapper.appVersionToAppVersionResponseDto(appVersion));
         }
-        logger.debug("Successfully mapped {} entities to DTOs", response.size());
         logger.info("Successfully retrieved all AppVersions. Total count: {}", response.size());
         
         return response;
@@ -56,28 +54,21 @@ public class AppVersionService {
     public AppVersionResponseDto create (AppVersionRequestDto request) {
         logger.info("Creating new AppVersion: {} for platform: {}", request.version(), request.platform());
         
-        AppVersion newaAppVersion = appVersionRepository.save(new AppVersion(null, request.version(), request.platform(),
-        LocalDateTime.now(), LocalDateTime.now().toString() + ": created", request.updateType(), request.active()));
-        logger.debug("AppVersion persisted to database with ID: {}", newaAppVersion.getId());
-        logger.info("Successfully created AppVersion with ID: {} for platform: {}", newaAppVersion.getId(), request.platform());
-
-        return AppVersionMapper.appVersionToAppVersionResponseDto(newaAppVersion);
+        AppVersion newAppVersion = appVersionRepository.save(new AppVersion(null, request.version(), request.platform(),
+        null, LocalDateTime.now().toString() + ": created", request.updateType(), request.active()));
+        logger.info("Successfully created AppVersion with ID: {} for platform: {}", newAppVersion.getId(), request.platform());
+        return AppVersionMapper.appVersionToAppVersionResponseDto(newAppVersion);
     }
 
     @Cacheable (value = "appVersion", key = "#id")
     public AppVersionResponseDto getById(Long id) {
-        logger.debug("Attempting to retrieve AppVersion with ID: {}", id);
-        
         AppVersion appVersion = appVersionRepository.findById(id).orElse(null);
-        
         if (appVersion != null) {
             logger.info("Successfully retrieved AppVersion with ID: {}", id);
-            
             return AppVersionMapper.appVersionToAppVersionResponseDto(appVersion);
         }
 
-        logger.warn("AppVersion with ID: {} not found in database", id);
-        return null;
+        throw new EntityNotFoundException("There's no AppVersion with ID: " + id.toString());
     }
 
     @Caching (evict = {
@@ -86,12 +77,9 @@ public class AppVersionService {
     })
     @Transactional
     public AppVersionResponseDto update(Long id, AppVersionRequestDto request) {
-        logger.info("Attempting to update AppVersion with ID: {}", id);
-        
         AppVersion updated = appVersionRepository.findById(id).map(existingAppVersion -> {
             logger.debug("Values before update - version: {}, platform: {}, active: {}", 
                         existingAppVersion.getVersion(), existingAppVersion.getPlatform(), existingAppVersion.isActive());
-            
             existingAppVersion.setVersion(request.version());
             existingAppVersion.setPlatform(request.platform());
             existingAppVersion.setChangelog(LocalDateTime.now().toString() + ": updated | " + existingAppVersion.getChangelog());
@@ -100,12 +88,10 @@ public class AppVersionService {
             
             AppVersion savedVersion = appVersionRepository.save(existingAppVersion);
             logger.info("Successfully updated AppVersion with ID: {}", id);
-            
             return savedVersion;
         }).orElse(null);
-        
         if (updated == null) {
-            logger.warn("Failed to update AppVersion with ID: {} - entity not found", id);
+            throw new EntityNotFoundException("There's no AppVersion with ID: " + id.toString());
         }
 
         return AppVersionMapper.appVersionToAppVersionResponseDto(updated);
@@ -117,94 +103,43 @@ public class AppVersionService {
     })
     @Transactional
     public boolean deleteById(Long id) {
-        logger.info("Attempting to delete AppVersion with ID: {}", id);
-        
         if (appVersionRepository.existsById(id)) {
-            logger.debug("AppVersion with ID: {} exists, proceeding with deletion", id);
-            
             appVersionRepository.deleteById(id);
             logger.info("Successfully deleted AppVersion with ID: {}", id);
-            
             return true;
         }
-
-        else {
-            logger.warn("Can't delete AppVersion with ID: {} - entity does not exist", id);
-            return false;
-        }
+        throw new EntityNotFoundException("There's no AppVersion with ID: " + id.toString());
     }
 
     public AppVersionResponseDto getByVersionAndPlatform(String version, PlatformType platformType) {
-        logger.info("Attempting to retrieve AppVersion with version {} and platform {}", version, platformType);
-
-        try {
-            logger.debug("Querying database for exact same AppVersion: {}", version);
-            AppVersion appVersion = appVersionRepository.findFirstByVersionAndPlatform(version, platformType);
-
-            if (appVersion != null) {
-                logger.info("Found exact same AppVersion in database: {}", version);
-                return AppVersionMapper.appVersionToAppVersionResponseDto(appVersion);
-            }
-
-            logger.warn("No such AppVersion in database as {}", version);
-            return null;
+        AppVersion appVersion = appVersionRepository.findFirstByVersionAndPlatform(version, platformType);
+        if (appVersion != null) {
+            logger.info("Found exact same AppVersion in database: {}", version);
+            return AppVersionMapper.appVersionToAppVersionResponseDto(appVersion);
         }
-        catch (IllegalArgumentException e) {
-            logger.error("Invalid AppVersion or platformType provided. Error: {}", e.getMessage(), e);
-            throw e;
-        }
-        catch (Exception e) {
-            logger.error("Unexpected error occurred while retrieving exact AppVersion. Error: {}", 
-                        e.getMessage(), e);
-            throw e;
-        }
-        
+        throw new EntityNotFoundException("There's no AppVersion with version: " + version);
     }
 
     //LOGIC
 
     @Cacheable (value = "latestAppVersion", key = "#platform")
     public AppVersionResponseDto getLatestVersion(String platform) {
-        logger.info("Retrieving latest active AppVersion for platform: {}", platform);
+        PlatformType platformType;
+        try {platformType = PlatformType.valueOf(platform.toUpperCase());}
+        catch (IllegalArgumentException e) {throw new IllegalArgumentException("Invalid platform type provided. Must be one of the valid PlatformType enum values.");}
         
-        try {
-            logger.debug("Converting platform string '{}' to PlatformType enum", platform);
-            PlatformType platformType = PlatformType.valueOf(platform.toUpperCase());
-            
-            logger.debug("Querying database for latest active AppVersion of platform: {}", platformType);
-            AppVersion latest = appVersionRepository.findFirstByPlatformAndActiveTrueOrderByReleaseDateDesc(platformType);
-            
-            if (latest != null) {
-                logger.info("Found latest AppVersion for platform {}: version {} released on {}", 
-                           platformType, latest.getVersion(), latest.getReleaseDate());
-                
-                return AppVersionMapper.appVersionToAppVersionResponseDto(latest);
-            }
-            
-            logger.warn("No active AppVersion found for platform: {}", platformType);
-            return null;
-            
-        } catch (IllegalArgumentException e) {
-            logger.error("Invalid platform type provided: '{}'. Must be one of the valid PlatformType enum values. Error: {}", 
-                        platform, e.getMessage(), e);
-            
-            throw e;
-        } catch (Exception e) {
-            logger.error("Unexpected error occurred while retrieving latest AppVersion for platform: {}. Error: {}", 
-                        platform, e.getMessage(), e);
-            throw e;
+        AppVersion latest = appVersionRepository.findFirstByPlatformAndActiveTrueOrderByReleaseDateDesc(platformType);
+        if (latest != null) {
+            logger.info("Found latest AppVersion for platform {}: version {} released on {}", 
+                       platformType, latest.getVersion(), latest.getReleaseDate());
+            return AppVersionMapper.appVersionToAppVersionResponseDto(latest);
         }
+        throw new EntityNotFoundException("There's no AppVersion with platform: " + platform);
     }
 
     public Page<AppVersion> getByFilter (String version, Pageable pageable) {
-        logger.info("Attempting to filter AppVersions");
-        
         Page <AppVersion> result = appVersionRepository.findAll(AppVersionSpecifications.filter(version), pageable);
-        logger.debug("Filter query returned {} results out of {} total elements", 
-                    result.getNumberOfElements(), result.getTotalElements());
-        logger.info("Successfully filtered AppVersions. Found {} results on page {} of {}", 
-                   result.getNumberOfElements(), result.getNumber() + 1, result.getTotalPages());
-        
+        logger.info("Successfully filtered AppVersions. Found {} results", result.getNumberOfElements());
         return result;
     }
 }

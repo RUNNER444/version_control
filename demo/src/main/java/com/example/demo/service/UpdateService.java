@@ -23,126 +23,76 @@ public class UpdateService {
     private static final Logger logger = LoggerFactory.getLogger(UpdateService.class);
 
     public UpdateResponseDto checkUserDeviceForUpdate (Long id) {
-        logger.info("Attempting to check if User Device {} needs an update", id);
+        UserDeviceResponseDto userDevice = userDeviceService.getById(id);
+        String deviceVersion = userDevice.currentVersion();
+        PlatformType devicePlatform = userDevice.platform();
 
-        try {
-            UserDeviceResponseDto userDevice = userDeviceService.getById(id);
-            String deviceVersion = userDevice.currentVersion();
-            PlatformType devicePlatform = userDevice.platform();
-            logger.debug("Device {} - Version: {} - Platform: {}", id, deviceVersion, devicePlatform);
+        AppVersionResponseDto latestVersion = appVersionService.getLatestVersion(String.valueOf(devicePlatform));
+        AppVersionResponseDto currentVersion = appVersionService.getByVersionAndPlatform(deviceVersion, devicePlatform);
 
-            AppVersionResponseDto latestVersion = appVersionService.getLatestVersion(String.valueOf(devicePlatform));
-
-            AppVersionResponseDto currentVersion = appVersionService.getByVersionAndPlatform(deviceVersion, devicePlatform);
-
-            if (currentVersion.updateType() == UpdateType.OPTIONAL) {
-                logger.info("Device {} has an optional update to app version: {}", id, latestVersion.version());
-                return new UpdateResponseDto(id, userDevice.userId(), true, deviceVersion, latestVersion.version(), UpdateType.OPTIONAL);
-            }
-
-            if (currentVersion.updateType() == UpdateType.MANDATORY) {
-                if (currentVersion.active()) logger.info("For proper work device {} is required to be updated to version: {}", id, latestVersion.version());
-                else logger.info("IMMEDIATELY UPDATE! Device {} has an app version that's no longer supported!", id);
-                return new UpdateResponseDto(id, userDevice.userId(), true, deviceVersion, latestVersion.version(), UpdateType.MANDATORY);
-            }
-
-            if (currentVersion.updateType() == UpdateType.DEPRECATED) {
-                if (currentVersion.active()) logger.info("Device {} has a deprecated app version. Need an update!", id);
-                else logger.info("IMMEDIATELY UPDATE! Device {} has a deprecated app version that's no longer supported!", id);
-                return new UpdateResponseDto(id, userDevice.userId(), true, deviceVersion, latestVersion.version(), UpdateType.DEPRECATED);
-            }
-
-            logger.info("Device {} is up to date and has the latest release", id);
-            return new UpdateResponseDto(id, userDevice.userId(), false, deviceVersion, deviceVersion, UpdateType.UNAVAILABLE);
+        if (currentVersion.updateType() == UpdateType.OPTIONAL) {
+            logger.info("Device {} has an optional update to app version: {}", id, latestVersion.version());
+            return new UpdateResponseDto(id, userDevice.userId(), true, deviceVersion, latestVersion.version(), UpdateType.OPTIONAL);
         }
-        catch (IllegalArgumentException e) {
-            logger.error("Invalid id is provided. Must be a number. Error: {}", e.getMessage(), e);
-            throw e;
+
+        if (currentVersion.updateType() == UpdateType.MANDATORY) {
+            if (currentVersion.active()) logger.info("For proper work device {} is required to be updated to version: {}", id, latestVersion.version());
+            else logger.info("Device {} has an app version that's no longer supported!", id);
+            return new UpdateResponseDto(id, userDevice.userId(), true, deviceVersion, latestVersion.version(), UpdateType.MANDATORY);
         }
-        catch (Exception e) {
-            logger.error("Unexpected error occured while checking device for update. Error: {}", e.getMessage(), e);
-            throw e;
+
+        if (currentVersion.updateType() == UpdateType.DEPRECATED) {
+            if (currentVersion.active()) logger.info("Device {} has a deprecated app version. Need an update!", id);
+            else logger.info(" Device {} has a deprecated app version that's no longer supported!", id);
+            return new UpdateResponseDto(id, userDevice.userId(), true, deviceVersion, latestVersion.version(), UpdateType.DEPRECATED);
         }
+
+        logger.info("Device {} is up to date and has the latest release", id);
+        return new UpdateResponseDto(id, userDevice.userId(), false, deviceVersion, deviceVersion, UpdateType.UNAVAILABLE);
     }
 
     public List<UpdateResponseDto> getDevicesWithUpdateType (String type) {
-        logger.info("Finding devices with version that has {} update type..", type);
+        UpdateType updateType;
+        try {updateType = UpdateType.valueOf(type.toUpperCase());}
+        catch (IllegalArgumentException e) {throw new IllegalArgumentException("Invalid update type is provided. Must be one of "+
+            "UNAVAILABLE, OPTIONAL, MANDATORY, DEPRECATED.");}
 
-        try {
-            logger.debug("Converting update type string '{}' to UpdateType enum", type);
-            UpdateType updateType = UpdateType.valueOf(type.toUpperCase());
-
-            List <UserDeviceResponseDto> allDevices = userDeviceService.getAll();
-
-            List <UpdateResponseDto> devicesWithSpecifiedUpdateType = new ArrayList<>();
-            for (UserDeviceResponseDto userDevice : allDevices) {
-                UpdateResponseDto updateData = checkUserDeviceForUpdate(userDevice.id());
-                if (updateData.updateType() == updateType) devicesWithSpecifiedUpdateType.add(updateData);
-            }
-            logger.info("Found {} devices with {} update type", devicesWithSpecifiedUpdateType.size(), type);
-
-            return devicesWithSpecifiedUpdateType;
+        List <UserDeviceResponseDto> allDevices = userDeviceService.getAll();
+        List <UpdateResponseDto> devicesWithSpecifiedUpdateType = new ArrayList<>();
+        for (UserDeviceResponseDto userDevice : allDevices) {
+            UpdateResponseDto updateData = checkUserDeviceForUpdate(userDevice.id());
+            if (updateData.updateType() == updateType) devicesWithSpecifiedUpdateType.add(updateData);
         }
-        catch (IllegalArgumentException e) {
-            logger.error("Invalid update type is provided. Must be one of UNAVAILABLE, OPTIONAL, "+
-            "MANDATORY, DEPRECATED. Error: {}", e.getMessage(), e);
-            throw e;
-        }
-        catch (Exception e) {
-            logger.error("Unexpected error occured while getting devices with specified update type {}. Error: {}", type, e.getMessage(), e);
-            throw e;
-        }
+        logger.info("Found {} devices with {} update type", devicesWithSpecifiedUpdateType.size(), type);
+
+        return devicesWithSpecifiedUpdateType;
     }
 
     public UpdateResponseDto updateDevice (Long id) {
-        logger.info("Trying to update user device with id: {}", id);
-
-        try {
-            logger.debug("Checking the possibility of update installation on user device..");
-            UpdateResponseDto updateData = checkUserDeviceForUpdate(id);
-
-            if (updateData.updateType() == UpdateType.UNAVAILABLE) {
-                return new UpdateResponseDto(id, updateData.userId(), false, updateData.currentVersion(), updateData.currentVersion(), UpdateType.UNAVAILABLE); 
-            }
-
-            logger.debug("Updating the version of user device to the latest available one");
-            userDeviceService.updateOnlyVersion(id, updateData.latestVersion());
-
-            logger.info("Successfully updated user device {} to the latest version: {}", id, updateData.latestVersion());
-            return new UpdateResponseDto(id, updateData.userId(), false, updateData.latestVersion(), updateData.latestVersion(), UpdateType.UNAVAILABLE);
+        UpdateResponseDto updateData = checkUserDeviceForUpdate(id);
+        if (updateData.updateType() == UpdateType.UNAVAILABLE) {
+            return new UpdateResponseDto(id, updateData.userId(), false, updateData.currentVersion(), updateData.currentVersion(), UpdateType.UNAVAILABLE); 
         }
-        catch (IllegalArgumentException e) {
-            logger.error("Invalid id is provided. Must be a number. Error: {}", e.getMessage(), e);
-            throw e;
-        }
-        catch (Exception e) {
-            logger.error("Unexpected error occured while updating device {}. Error: {}", id, e.getMessage(), e);
-            throw e;
-        }
+
+        userDeviceService.updateOnlyVersion(id, updateData.latestVersion());
+        logger.info("Successfully updated user device {} to the latest version: {}", id, updateData.latestVersion());
+        return new UpdateResponseDto(id, updateData.userId(), false, updateData.latestVersion(), updateData.latestVersion(), UpdateType.UNAVAILABLE);
     }
 
     public List<UpdateResponseDto> forceUpdateAllOutdated () {
-        logger.info("Trying to force update all user devices that which versions are outdated (MANDATORY OR DEPRECATED)..");
-
+        int successCount = 0;
         List <UpdateResponseDto> response = new ArrayList<>();
+        List <UpdateResponseDto> outdatedDevices = getDevicesWithUpdateType("MANDATORY");
+        outdatedDevices.addAll(getDevicesWithUpdateType("DEPRECATED"));
 
-        try {
-            logger.debug("Getting all devices with outdated versions");
-            List <UpdateResponseDto> outdatedDevices = getDevicesWithUpdateType("MANDATORY");
-            outdatedDevices.addAll(getDevicesWithUpdateType("DEPRECATED"));
-
-            logger.debug("Updating in total {} user devices", outdatedDevices.size());
-            for (UpdateResponseDto updateData : outdatedDevices) {
-                response.add(updateDevice(updateData.userDeviceId()));
+        for (UpdateResponseDto updateData : outdatedDevices) {
+            try {response.add(updateDevice(updateData.userDeviceId())); successCount++;}
+            catch (Exception e) {
+                logger.warn("Failed to update device {}", updateData.userDeviceId());
             }
-            logger.info("Updated {} devices to the last version", response.size());
+        }
+        logger.info("Updated {} devices to the last version", successCount);
 
-            return response;
-        }
-        catch (Exception e) {
-            logger.info("Updated {} devices to the last version", response.size());
-            logger.error("Unexpected error occured while force updating devices. Error: {}", e.getMessage(), e);
-            throw e;
-        }
+        return response;
     }
 }

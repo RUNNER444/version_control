@@ -13,9 +13,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,91 +26,49 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Tag(name = "Authentication", description = "Methods for user authentication and authorization")
 public class AuthenticationController {
     private final AuthenticationService authenticationService;
-    private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
     @Operation(
-        summary = "Login User",
-        description = "Authenticates user credentials and returns JWT token")
+    summary = "Login User",
+    description = "Authenticates user credentials and returns JWT token")
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(
-            @CookieValue(name = "access-token", required = false) String access,
-            @CookieValue(name = "refresh-token", required = false) String refresh,
-            @RequestBody LoginRequestDto request) {
-        logger.info("Received request to login user {}", request.username());
-        
-        try {
-            return authenticationService.login(request, access, refresh);
-        }
-        catch (Exception e) {
-            logger.error("Error while logging in user {}. Error: {}", request.username(), e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+    @CookieValue(name = "access-token", required = false) String access,
+    @CookieValue(name = "refresh-token", required = false) String refresh,
+    @RequestBody LoginRequestDto request) {
+        return authenticationService.login(request, access, refresh);
     }
 
     @Operation(
-        summary = "Refresh User tokens",
-        description = "Checks User tokens and refreshes the if needed")
+    summary = "Refresh User tokens",
+    description = "Checks User tokens and refreshes the if needed")
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDto> refresh(
-            @CookieValue(name = "refresh-token", required = false) String refresh) {
-        logger.info("Received request to refresh tokens");
-
-        try {
-            return authenticationService.refresh(refresh);
-        }
-        catch (Exception e) {
-            logger.error("Error while refreshing tokens: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+    @CookieValue(name = "refresh-token", required = false) String refresh) {
+        return authenticationService.refresh(refresh);
     }
 
     @Operation(
-        summary = "Logout User",
-        description = "Revokes User tokens and logs him out")
+    summary = "Logout User",
+    description = "Revokes User tokens and logs him out")
     @PostMapping("/logout")
     public ResponseEntity<LoginResponseDto> logout(
-            @CookieValue(name = "access-token", required = false) String access) {
-        logger.info("Received request to logout user");
-
-        try {
-            return authenticationService.logout(access);
-        }
-        catch (Exception e) {
-            logger.error("Error while logging out user: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-        
+    @CookieValue(name = "access-token", required = false) String access) {
+        return authenticationService.logout(access);
     }
 
     @Operation(
-        summary = "Get User info",
-        description = "Shows info about authorized User")
+    summary = "Get User info",
+    description = "Shows info about authorized User")
     @GetMapping("/info")
     public ResponseEntity <UserLoggedDto> info() {
-        logger.info("Received request to show info about user");
-
-        try {
-            return ResponseEntity.ok(authenticationService.info());
-        }
-        catch (Exception e) {
-            logger.error("Error while showing info about user: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        return ResponseEntity.ok(authenticationService.info());
     }
 
     @Operation(
-        summary = "Change User password",
-        description = "Changes User password to new one and logs him out after it")
+    summary = "Change User password",
+    description = "Changes User password to new one and logs him out after it")
     @PatchMapping("/changePassword")
     public ResponseEntity <LoginResponseDto> changePassword(ChangePasswordRequestDto request) {
-        logger.info("Received request to change password");
-
-        try {
-            return authenticationService.changePassword(request);
-        }
-        catch (Exception e) {
-            logger.error("Error while changing user's password: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        return authenticationService.changePassword(request);
     }
 }
