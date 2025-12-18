@@ -139,7 +139,7 @@ public class NotificationService {
     //LOGIC
     
     @Transactional
-    public int sendNotificationsToOutdatedDevices() {
+    public String sendNotificationsToOutdatedDevices() {
         int successCount = 0;
         List <UpdateResponseDto> outdatedDevices = updateService.getDevicesWithUpdateType("MANDATORY");
         outdatedDevices.addAll(updateService.getDevicesWithUpdateType("DEPRECATED"));
@@ -155,7 +155,7 @@ public class NotificationService {
             }
         }
         logger.info("Created {} notifications for outdated devices", successCount);
-        return successCount;
+        return "Sent " + successCount + " notifications";
     }
 
     private String generateMessage (UpdateType updateType, String latestVersion) {

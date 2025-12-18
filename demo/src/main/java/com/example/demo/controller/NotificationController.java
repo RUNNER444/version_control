@@ -116,7 +116,7 @@ public class NotificationController {
     summary = "Send notifications to all outdated devices",
     description = "Sends notifications about a needing to update to all devices with MANDATORY or DEPRECATED app versions")
     @PostMapping("/send")
-    public String sendToOutdated () {
-        return "Notifications sent: " + notificationService.sendNotificationsToOutdatedDevices();
+    public ResponseEntity <String> sendToOutdated () {
+        return ResponseEntity.ok(notificationService.sendNotificationsToOutdatedDevices());
     }
 }

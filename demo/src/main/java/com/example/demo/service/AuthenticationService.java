@@ -41,6 +41,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private final BotService botService;
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
 
     @Value("${jwt.access.duration.minute}")
@@ -106,6 +107,13 @@ public class AuthenticationService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         logger.info("Login completed successfully for user: {}", user.getUsername());
+
+        try {
+            botService.sendToAdmin("User " + user.getUsername() + " successfully logged in");
+        }
+        catch (Exception e) {
+            logger.error("Failed to send login notification to admin");
+        }
         
         return ResponseEntity.ok().headers(headers).body(new LoginResponseDto(true, user.getRole().getName()));
     }

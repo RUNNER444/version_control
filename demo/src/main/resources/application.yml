@@ -79,3 +79,9 @@ springdoc:
         try-it-out-enabled: true
     show-actuator: false
     packages-to-scan: com.example.demo.controller
+---
+telegram:
+    bot:
+        name: ${BOT_NAME}
+        token: ${BOT_TOKEN}
+        chat-id: ${CHAT_ID}
