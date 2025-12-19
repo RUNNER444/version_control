@@ -8,10 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.example.demo.dto.NotificationRequestDto;
 import com.example.demo.dto.NotificationResponseDto;
 import com.example.demo.dto.UpdateResponseDto;
+import com.example.demo.dto.UserDto;
 import com.example.demo.enums.NotificationType;
 import com.example.demo.enums.UpdateType;
 import com.example.demo.mapper.NotificationMapper;
@@ -26,7 +29,9 @@ import lombok.RequiredArgsConstructor;
 @Transactional (readOnly = true)
 public class NotificationService {
     private final NotificationRepository notificationRepository;
+    private final UserService userService;
     private final UpdateService updateService;
+    private final BotService botService;
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
 
     //CRUD
@@ -78,6 +83,22 @@ public class NotificationService {
         null, request.currentVersion(), null, request.latestVersion(), null,
         request.updateType(), NotificationType.PENDING, null, null, request.message()));
         logger.info("Update notification created. ID: {}", newNotification.getId());
+
+        UserDto user = userService.getUser(request.userId());
+        if (user.telegramChatId() != null) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    botService.sendNotificationWithButtons(
+                        user.telegramChatId(),
+                        request.message(),
+                        newNotification.getId());
+                }
+            });
+        }
+        else {
+            logger.warn("User {} has no Telegram chat ID", request.userId());
+        }
 
         return NotificationMapper.notificationToNotificationResponseDto(newNotification);
     }

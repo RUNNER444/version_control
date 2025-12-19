@@ -4,6 +4,7 @@ import java.util.Set;
 
 public record UserLoggedDto(String username,
 String role,
-Set <String> permissions) {
+Set <String> permissions,
+Long telegramChatId) {
 
 }

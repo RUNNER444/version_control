@@ -7,6 +7,7 @@ public record UserDto(Long id,
 String username, 
 String password, 
 String role, 
-Set<String> permissions) implements Serializable {
+Set<String> permissions,
+Long telegramChatId) implements Serializable {
     
 }

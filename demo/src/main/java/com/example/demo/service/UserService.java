@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dto.UserDto;
 import com.example.demo.exception.ResourceNotFoundException;
@@ -16,6 +17,7 @@ import com.example.demo.model.User;
 
 @RequiredArgsConstructor
 @Service
+@Transactional(readOnly = true)
 public class UserService {
     private final UserRepository userRepository;
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
@@ -56,8 +58,21 @@ public class UserService {
         return user;
     }
 
+    @Transactional
     public void saveUser(User user) {
         userRepository.save(user);
         logger.info("Successfully saved user: {}", user.getUsername());
     }
+
+    @Transactional
+    public void updateTelegramId(Long id, Long telegramChatId) {
+        User user = userRepository.findById(id).orElseThrow(() -> {
+            logger.warn("User with ID {} not found", id);
+            return new ResourceNotFoundException("User with id " + id + "not found");
+        });
+        user.setTelegramChatId(telegramChatId);
+        userRepository.save(user);
+
+        logger.info("Successfully linked Telegram Chat ID {} to User {}", telegramChatId, id);
+    }   
 }

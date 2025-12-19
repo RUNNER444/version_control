@@ -33,7 +33,7 @@ VALUES (6, '0.0.5a', 'ANDROID', '2025-05-01 12:00:00', 'Bug fixes', 'UNAVAILABLE
 INSERT INTO user_device (id, user_id, platform, current_version, last_seen) 
 VALUES (1, 2, 'ANDROID', '0.0.1a', '2025-03-01 09:00:00');
 INSERT INTO user_device (id, user_id, platform, current_version, last_seen) 
-VALUES (2, 2, 'IOS', '0.0.1i', '2025-03-05 10:00:00');
+VALUES (2, 1, 'ANDROID', '0.0.1a', '2025-03-05 10:00:00');
 INSERT INTO user_device (id, user_id, platform, current_version, last_seen) 
 VALUES (3, 2, 'ANDROID', '0.0.2a', '2025-03-01 09:00:00');
 INSERT INTO user_device (id, user_id, platform, current_version, last_seen) 

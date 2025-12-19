@@ -49,6 +49,8 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private Set<Notification> notifications;
 
+    private Long telegramChatId;
+
     @Override
     public Collection <?extends GrantedAuthority> getAuthorities() {
         Set <String> authorities = new HashSet<>();
