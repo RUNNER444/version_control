@@ -48,9 +48,6 @@ jwt:
         cookie-name: refresh-token
 ---
 logging:
-    level:
-        root: INFO
-        com.example.demo: DEBUG
     file:
         name: logs/application.log
     pattern:
@@ -85,3 +82,6 @@ telegram:
         name: ${BOT_NAME}
         token: ${BOT_TOKEN}
         chat-id: ${CHAT_ID}
+---
+report:
+    template-location: classpath:templates/report-template.xlsx

@@ -95,6 +95,8 @@ public class NotificationService {
                         newNotification.getId());
                 }
             });
+            newNotification.setStatus(NotificationType.SENT);
+            notificationRepository.save(newNotification);
         }
         else {
             logger.warn("User {} has no Telegram chat ID", request.userId());

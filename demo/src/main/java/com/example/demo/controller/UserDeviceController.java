@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
@@ -111,13 +112,16 @@ public class UserDeviceController {
         summary = "Generate report for user's outdated devices",
         description = "Packs all user's outdated devices into single html file with all important information about them")
     @GetMapping(value = "/userDevices/getReport")
-    public ResponseEntity<String> downloadOutdatedForUser(
+    public ResponseEntity<Resource> downloadOutdatedForUser(
     @Parameter(description = "ID of the user for checking devices", required = true)
     @RequestParam(required = true) Long userId,
     @Parameter(description = "Platform type (ANDROID or IOS)", required = true)
     @RequestParam(required = true) String platform) {
-        String generatedHtml = reportService.getOutdatedDevicesReport(userId, platform);
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=outdated_report.html").body(generatedHtml);
+        Resource resource = reportService.getOutdatedDevicesReport(userId, platform);
+        return ResponseEntity.ok()
+        .contentType(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=outdated_report.xlsx")
+        .body(resource);
     }
 
     @Operation(

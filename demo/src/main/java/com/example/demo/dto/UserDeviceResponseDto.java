@@ -9,5 +9,9 @@ public record UserDeviceResponseDto(Long id,
     PlatformType platform,
     String currentVersion,
     LocalDateTime lastSeen) {
-
+    public Long getId() {return id;}
+    public Long getUserId() {return userId;}
+    public PlatformType getPlatform() {return platform;}
+    public String getCurrentVersion() {return currentVersion;}
+    public LocalDateTime getLastSeen() {return lastSeen;}
 }

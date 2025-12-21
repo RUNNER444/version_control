@@ -56,6 +56,7 @@ public class BotService extends TelegramLongPollingBot{
             handleCallback(update.getCallbackQuery());
         }
         else if (update.hasMessage() && update.getMessage().hasText()) {
+            logger.info("Received message: {}", update.getMessage().getText());
             String messageText = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
 
@@ -63,7 +64,6 @@ public class BotService extends TelegramLongPollingBot{
                 handleStart(chatId, messageText);
             }
             else {
-                logger.info("Received message: {}", update.getMessage().getText());
                 sendMessage(chatId, "Unknown message. Send '/start <user_id>' to link your account.");
             }
         }
@@ -149,7 +149,7 @@ public class BotService extends TelegramLongPollingBot{
             logger.info("Notification sent to chat: {}", chatId);
         }
         catch (TelegramApiException e) {
-            logger.error("Failed to send message", e);
+            logger.error("Failed to send notification", e);
         }
     }
 
@@ -164,6 +164,7 @@ public class BotService extends TelegramLongPollingBot{
         try {
             Long userId = Long.parseLong(data[1]);
             userService.updateTelegramId(userId, chatId);
+            sendMessage(chatId, "Successfully linked your account to user " + userId);
         }
         catch (Exception e) {
             sendMessage(chatId, "An error occurred while linking");
