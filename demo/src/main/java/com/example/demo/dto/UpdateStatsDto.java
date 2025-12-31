@@ -1,11 +1,11 @@
 package com.example.demo.dto;
 
-import java.util.Map;
+import java.util.List;
 
-import com.example.demo.enums.PlatformType;
-
-public record UpdateStatsDto (String version,
-Map<PlatformType, Integer> usersCount,
-Double globalUpdateRate) {
+public record UpdateStatsDto (
+    List <String> versions,
+    List <String> platforms,
+    List <List <Object>> data
+) {
     
 }

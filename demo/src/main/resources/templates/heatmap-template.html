@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Version Distribution Heatmap</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #chart-container { width: 100%; height: 600px; }
+    </style>
+</head>
+<body>
+    <h2>User Distribution Heatmap</h2>
+    <div id="chart-container"></div>
+
+    <script th:inline="javascript">
+        const rawData = /*[[${heatmapData}]]*/ {};
+        
+        const chartDom = document.getElementById('chart-container');
+        const myChart = echarts.init(chartDom);
+        
+        const option = {
+            tooltip: {
+                position: 'top',
+                formatter: function (params) {
+                    return 'Version: ' + rawData.versions[params.data[0]] + '<br/>' +
+                           'Platform: ' + rawData.platforms[params.data[1]] + '<br/>' +
+                           'Users: ' + params.data[2];
+                }
+            },
+            grid: {
+                height: '50%',
+                top: '10%'
+            },
+            xAxis: {
+                type: 'category',
+                data: rawData.versions,
+                splitArea: { show: true },
+                name: 'App Versions'
+            },
+            yAxis: {
+                type: 'category',
+                data: rawData.platforms,
+                splitArea: { show: true },
+                name: 'Platform'
+            },
+            visualMap: {
+                min: 0,
+                max: Math.max(...rawData.data.map(item => item[2])),
+                calculable: true,
+                orient: 'horizontal',
+                left: 'center',
+                bottom: '15%',
+                inRange: {
+                    color: ['#f0f9ff', '#004c80'] 
+                }
+            },
+            series: [{
+                name: 'Users',
+                type: 'heatmap',
+                data: rawData.data,
+                label: {
+                    show: true
+                },
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }]
+        };
+
+        myChart.setOption(option);
+        /*]]>*/
+    </script>
+</body>
+</html>
